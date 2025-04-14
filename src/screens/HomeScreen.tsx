@@ -171,11 +171,21 @@ const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
 
   const navigateToFeature = (feature: typeof features[0]) => {
-    navigation.navigate('FeaturePlaceholder', {
-      featureId: feature.id,
-      featureName: feature.name,
-      description: feature.description
-    });
+    // For implemented features, navigate directly to their screens
+    if (feature.id === 1) {
+      // User Authentication - Navigate to Profile
+      navigation.navigate('Profile');
+    } else if (feature.id === 2) {
+      // Word Lists
+      navigation.navigate('Lists');
+    } else {
+      // For other features, use placeholder
+      navigation.navigate('FeaturePlaceholder', {
+        featureId: feature.id,
+        featureName: feature.name,
+        description: feature.description
+      });
+    }
   };
 
   if (Platform.OS === 'web') {

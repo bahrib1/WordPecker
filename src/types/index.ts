@@ -1,27 +1,3 @@
-// Navigation Types
-export type RootStackParamList = {
-  Home: undefined;
-  FeaturePlaceholder: { 
-    featureId: number; 
-    featureName: string; 
-    description: string 
-  };
-  // These would be implemented by the team
-  Login: undefined;
-  Register: undefined;
-  Lists: undefined;
-  CreateList: undefined;
-  ListDetail: { listId: string };
-  AddWord: { listId: string };
-  Learn: { listId: string };
-  Quiz: { listId: string };
-  Progress: undefined;
-  Search: undefined;
-  Settings: undefined;
-  // Innovative features would be added here
-};
-
-// Data Types
 export interface User {
   id: string;
   email: string;
@@ -29,49 +5,6 @@ export interface User {
   createdAt: string;
 }
 
-export interface WordList {
-  id: string;
-  name: string;
-  description: string;
-  context?: string;
-  createdAt: string;
-  wordCount?: number;
-}
-
-export interface Word {
-  id: string;
-  listId: string;
-  value: string;
-  meaning: string;
-  createdAt: string;
-}
-
-export interface Exercise {
-  wordId: string;
-  type: 'multiple_choice';
-  question: string;
-  options: string[];
-  correctAnswer: string;
-}
-
-export interface Quiz {
-  wordId: string;
-  type: 'quiz';
-  question: string;
-  options: string[];
-  correctAnswer: string;
-}
-
-export interface Progress {
-  listId: string;
-  wordId: string;
-  mastery: number; // 0-100
-  lastPracticed: string;
-  timesCorrect: number;
-  timesIncorrect: number;
-}
-
-// Auth Context Types
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
@@ -79,9 +12,118 @@ export interface AuthState {
   error: string | null;
 }
 
-export interface AuthContextProps {
-  authState: AuthState;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
+export interface WordList {
+  id: string;
+  name: string;
+  description: string;
+  context?: string;
+  source?: string;
+  language?: string;
+  createdAt: string;
+  wordCount: number;
+  progress: number;
 }
+
+export interface Word {
+  id: string;
+  listId: string;
+  value: string;
+  meaning: string;
+  context?: string;
+  createdAt: string;
+  imageUrl?: string;
+  pronunciationUrl?: string;
+}
+
+export interface Exercise {
+  id: string;
+  type: 'multiple_choice' | 'fill_blank' | 'match' | 'write';
+  question: string;
+  options?: string[];
+  correctAnswer: string;
+}
+
+export interface Test {
+  id: string;
+  listId: string;
+  exercises: Exercise[];
+  timeLimit?: number;
+  createdAt: string;
+}
+
+export interface Progress {
+  userId: string;
+  listId: string;
+  wordId?: string;
+  score: number;
+  lastPracticed: string;
+  streak: number;
+  masteryLevel: number; // 0-5 scale
+}
+
+export interface ProgressStats {
+  summary: {
+    totalWords: number;
+    learnedWords: number;
+    masteredWords: number;
+    averageScore: number;
+    currentStreak: number;
+    bestStreak: number;
+  };
+  daily: {
+    dates: string[];
+    learningScores: number[];
+    testScores: number[];
+  };
+  listProgress: {
+    id: string;
+    name: string;
+    progress: number;
+  }[];
+  wordStats: {
+    status: string;
+    count: number;
+  }[];
+  recommendedLists: {
+    id: string;
+    name: string;
+    wordCount: number;
+    progress: number;
+    reason: string;
+  }[];
+  achievements: {
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+    unlocked: boolean;
+    progress: number;
+  }[];
+}
+
+export interface Settings {
+  theme: 'light' | 'dark' | 'system';
+  notifications: boolean;
+  defaultLanguage: string;
+  sessionLength: number;
+  autoPlayPronunciation: boolean;
+}
+
+export type RootStackParamList = {
+  Home: undefined;
+  Login: undefined;
+  Register: undefined;
+  ForgotPassword: undefined;
+  Profile: undefined;
+  Lists: undefined;
+  CreateList: undefined;
+  AddWord: { listId: string };
+  ListDetails: { listId: string };
+  Learning: { listId: string };
+  Test: { listId: string };
+  Progress: undefined;
+  Search: undefined;
+  Settings: undefined;
+  CameraScan: undefined;
+  VoiceCommands: undefined;
+};

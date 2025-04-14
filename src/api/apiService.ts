@@ -1,157 +1,868 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { User, WordList, Word, Exercise, Test, Progress } from '../types';
 
-// Placeholder for API URL - this should be in .env files in real app
+// Base URL for API
 const API_URL = 'https://api.wordpecker.example.com';
 
-// Define types
-export interface WordList {
-  id: string;
+// For demo purposes, we'll simulate API calls with local data
+const simulateApiCall = async <T>(data: T, delay = 1000): Promise<T> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(data);
+    }, delay);
+  });
+};
+
+// Token management
+const getToken = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem('auth_token');
+  } catch (error) {
+    console.error('Error getting token:', error);
+    return null;
+  }
+};
+
+const setToken = async (token: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem('auth_token', token);
+  } catch (error) {
+    console.error('Error setting token:', error);
+  }
+};
+
+const removeToken = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem('auth_token');
+  } catch (error) {
+    console.error('Error removing token:', error);
+  }
+};
+
+// Auth API
+const register = async (name: string, email: string, password: string): Promise<{ user: User; token: string }> => {
+  try {
+    // In a real app, this would be an API call
+    // const response = await axios.post(`${API_URL}/auth/register`, { name, email, password });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const mockUser: User = {
+      id: '1',
+      email,
+      name,
+      createdAt: new Date().toISOString()
+    };
+    
+    const mockResponse = {
+      user: mockUser,
+      token: 'mock-jwt-token'
+    };
+    
+    await setToken(mockResponse.token);
+    return simulateApiCall(mockResponse);
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw error;
+  }
+};
+
+const login = async (email: string, password: string): Promise<{ user: User; token: string }> => {
+  try {
+    // In a real app, this would be an API call
+    // const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+    // return response.data;
+    
+    // For demo, simulate API call
+    // Validate credentials (in a real app, this would be done server-side)
+    if (email !== 'test@example.com' && password !== 'password123') {
+      throw new Error('Invalid credentials');
+    }
+    
+    const mockUser: User = {
+      id: '1',
+      email,
+      name: 'Test User',
+      createdAt: new Date().toISOString()
+    };
+    
+    const mockResponse = {
+      user: mockUser,
+      token: 'mock-jwt-token'
+    };
+    
+    await setToken(mockResponse.token);
+    return simulateApiCall(mockResponse);
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
+};
+
+const forgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    // In a real app, this would be an API call
+    // const response = await axios.post(`${API_URL}/auth/forgot-password`, { email });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const mockResponse = {
+      success: true,
+      message: 'Password reset instructions sent to your email'
+    };
+    
+    return simulateApiCall(mockResponse);
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    throw error;
+  }
+};
+
+const logout = async (): Promise<void> => {
+  try {
+    // In a real app, this might involve an API call
+    // await axios.post(`${API_URL}/auth/logout`);
+    
+    // Remove token
+    await removeToken();
+  } catch (error) {
+    console.error('Logout error:', error);
+    throw error;
+  }
+};
+
+const getCurrentUser = async (): Promise<User | null> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      return null;
+    }
+    
+    // In a real app, this would be an API call with the token
+    // const response = await axios.get(`${API_URL}/auth/me`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const mockUser: User = {
+      id: '1',
+      email: 'test@example.com',
+      name: 'Test User',
+      createdAt: new Date().toISOString()
+    };
+    
+    return simulateApiCall(mockUser);
+  } catch (error) {
+    console.error('Get current user error:', error);
+    return null;
+  }
+};
+
+// Word Lists API
+const getLists = async (): Promise<WordList[]> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.get(`${API_URL}/lists`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const mockLists: WordList[] = [
+      {
+        id: '1',
+        name: 'Temel İngilizce',
+        description: 'Günlük hayatta sık kullanılan temel İngilizce kelimeler',
+        language: 'en',
+        createdAt: '2025-03-15T10:30:00Z',
+        wordCount: 42,
+        progress: 0.65
+      },
+      {
+        id: '2',
+        name: 'İş İngilizcesi',
+        description: 'İş hayatında kullanılan terimler ve ifadeler',
+        language: 'en',
+        createdAt: '2025-03-20T14:45:00Z',
+        wordCount: 28,
+        progress: 0.3
+      },
+      {
+        id: '3',
+        name: 'Seyahat Terimleri',
+        description: 'Seyahat ederken kullanabileceğiniz kelimeler',
+        language: 'en',
+        createdAt: '2025-04-01T09:15:00Z',
+        wordCount: 35,
+        progress: 0.1
+      }
+    ];
+    
+    return simulateApiCall(mockLists);
+  } catch (error) {
+    console.error('Get lists error:', error);
+    throw error;
+  }
+};
+
+// Create list
+const createList = async (listData: {
   name: string;
   description: string;
   context?: string;
-  createdAt: string;
-  wordCount?: number;
-}
+  source?: string;
+  language: string;
+}): Promise<WordList> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.post(`${API_URL}/lists`, listData, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const mockList: WordList = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: listData.name,
+      description: listData.description,
+      context: listData.context,
+      source: listData.source,
+      language: listData.language,
+      createdAt: new Date().toISOString(),
+      wordCount: 0,
+      progress: 0
+    };
+    
+    return simulateApiCall(mockList);
+  } catch (error) {
+    console.error('Create list error:', error);
+    throw error;
+  }
+};
 
-export interface Word {
-  id: string;
+// Get list by ID
+const getListById = async (listId: string): Promise<WordList> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.get(`${API_URL}/lists/${listId}`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const lists = await getLists();
+    const list = lists.find(l => l.id === listId);
+    
+    if (!list) {
+      throw new Error('Liste bulunamadı');
+    }
+    
+    return simulateApiCall(list);
+  } catch (error) {
+    console.error('Get list by ID error:', error);
+    throw error;
+  }
+};
+
+// Get words by list ID
+const getWordsByListId = async (listId: string): Promise<Word[]> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.get(`${API_URL}/lists/${listId}/words`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const mockWords: Word[] = [
+      {
+        id: '1',
+        listId,
+        value: 'apple',
+        meaning: 'elma',
+        context: 'I eat an apple every day.',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '2',
+        listId,
+        value: 'book',
+        meaning: 'kitap',
+        context: 'I read a book before bed.',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '3',
+        listId,
+        value: 'computer',
+        meaning: 'bilgisayar',
+        createdAt: new Date().toISOString()
+      }
+    ];
+    
+    return simulateApiCall(mockWords);
+  } catch (error) {
+    console.error('Get words by list ID error:', error);
+    throw error;
+  }
+};
+
+// Add word to list
+const addWord = async (wordData: {
   listId: string;
   value: string;
   meaning: string;
-  createdAt: string;
-}
-
-export interface Exercise {
-  wordId: string;
-  type: 'multiple_choice';
-  question: string;
-  options: string[];
-  correctAnswer: string;
-}
-
-export interface Quiz {
-  wordId: string;
-  type: 'quiz';
-  question: string;
-  options: string[];
-  correctAnswer: string;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-  createdAt: string;
-}
-
-// Axios instance
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Authentication token interceptor
-api.interceptors.request.use(
-  async (config) => {
-    const token = await AsyncStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  context?: string;
+}): Promise<Word> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Define API service with placeholder implementations
-const apiService = {
-  // Auth endpoints
-  login: async (email: string, password: string) => {
-    // This would be implemented by the team
-    console.log('Login API call - to be implemented');
-    return { user: { id: '1', email, name: 'Test User', createdAt: new Date().toISOString() }, token: 'test-token' };
-  },
-  
-  register: async (email: string, password: string, name: string) => {
-    // This would be implemented by the team
-    console.log('Register API call - to be implemented');
-    return { user: { id: '1', email, name, createdAt: new Date().toISOString() }, token: 'test-token' };
-  },
-  
-  // Lists endpoints
-  getLists: async (): Promise<WordList[]> => {
-    // This would be implemented by the team
-    console.log('Get lists API call - to be implemented');
-    return [
-      { id: '1', name: 'Sample List', description: 'A sample list', createdAt: new Date().toISOString(), wordCount: 10 }
-    ];
-  },
-  
-  createList: async (list: { name: string; description: string; context?: string }): Promise<WordList> => {
-    // This would be implemented by the team
-    console.log('Create list API call - to be implemented');
-    return { 
-      id: Math.random().toString(36).substring(7), 
-      ...list, 
-      createdAt: new Date().toISOString() 
+    
+    // In a real app, this would be an API call
+    // const response = await axios.post(`${API_URL}/words`, wordData, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const mockWord: Word = {
+      id: Math.random().toString(36).substring(2, 9),
+      listId: wordData.listId,
+      value: wordData.value,
+      meaning: wordData.meaning,
+      context: wordData.context,
+      createdAt: new Date().toISOString()
     };
-  },
-  
-  // Words endpoints
-  getWords: async (listId: string): Promise<Word[]> => {
-    // This would be implemented by the team
-    console.log('Get words API call - to be implemented');
-    return [
-      { id: '1', listId, value: 'sample', meaning: 'an example', createdAt: new Date().toISOString() }
-    ];
-  },
-  
-  addWord: async (word: { listId: string; value: string; meaning?: string }): Promise<Word> => {
-    // This would be implemented by the team
-    console.log('Add word API call - to be implemented');
-    return { 
-      id: Math.random().toString(36).substring(7), 
-      ...word, 
-      meaning: word.meaning || 'To be generated', 
-      createdAt: new Date().toISOString() 
-    };
-  },
-  
-  // Learning endpoints
-  startLearning: async (listId: string): Promise<{ exercises: Exercise[] }> => {
-    // This would be implemented by the team
-    console.log('Start learning API call - to be implemented');
-    return { 
-      exercises: [
-        {
-          wordId: '1',
-          type: 'multiple_choice',
-          question: 'What does "sample" mean?',
-          options: ['an example', 'a test', 'a demonstration', 'a specimen'],
-          correctAnswer: 'an example'
-        }
-      ] 
-    };
-  },
-  
-  // Quiz endpoints
-  startQuiz: async (listId: string): Promise<{ questions: Quiz[] }> => {
-    // This would be implemented by the team
-    console.log('Start quiz API call - to be implemented');
-    return { 
-      questions: [
-        {
-          wordId: '1',
-          type: 'quiz',
-          question: 'Which of these is a "sample"?',
-          options: ['A prototype', 'A final product', 'A manufacturing tool', 'A sales brochure'],
-          correctAnswer: 'A prototype'
-        }
-      ] 
-    };
-  },
+    
+    return simulateApiCall(mockWord);
+  } catch (error) {
+    console.error('Add word error:', error);
+    throw error;
+  }
 };
 
-export default apiService;
+// Add multiple words to list
+const addBulkWords = async (
+  listId: string,
+  wordsData: { value: string; meaning: string; context?: string }[]
+): Promise<Word[]> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.post(`${API_URL}/lists/${listId}/bulk-words`, { words: wordsData }, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const mockWords: Word[] = wordsData.map(wordData => ({
+      id: Math.random().toString(36).substring(2, 9),
+      listId,
+      value: wordData.value,
+      meaning: wordData.meaning,
+      context: wordData.context,
+      createdAt: new Date().toISOString()
+    }));
+    
+    return simulateApiCall(mockWords);
+  } catch (error) {
+    console.error('Add bulk words error:', error);
+    throw error;
+  }
+};
+
+// Delete word
+const deleteWord = async (wordId: string): Promise<void> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // await axios.delete(`${API_URL}/words/${wordId}`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    
+    // For demo, simulate API call
+    return simulateApiCall(undefined);
+  } catch (error) {
+    console.error('Delete word error:', error);
+    throw error;
+  }
+};
+
+// Save learning progress
+const saveProgress = async (listId: string, progressData: {
+  correct: number;
+  total: number;
+  score: number;
+}): Promise<void> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // await axios.post(`${API_URL}/lists/${listId}/progress`, progressData, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    
+    // For demo, simulate API call
+    return simulateApiCall(undefined);
+  } catch (error) {
+    console.error('Save progress error:', error);
+    throw error;
+  }
+};
+
+// Save test result
+const saveTestResult = async (listId: string, resultData: {
+  correct: number;
+  total: number;
+  score: number;
+  timeSpent: number;
+}): Promise<void> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // await axios.post(`${API_URL}/lists/${listId}/test-results`, resultData, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    
+    // For demo, simulate API call
+    return simulateApiCall(undefined);
+  } catch (error) {
+    console.error('Save test result error:', error);
+    throw error;
+  }
+};
+
+// Update list
+const updateList = async (listId: string, listData: {
+  name: string;
+  description?: string;
+  context?: string;
+  source?: string;
+}): Promise<WordList> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.put(`${API_URL}/lists/${listId}`, listData, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call
+    const lists = await getLists();
+    const listIndex = lists.findIndex(l => l.id === listId);
+    
+    if (listIndex === -1) {
+      throw new Error('Liste bulunamadı');
+    }
+    
+    const updatedList: WordList = {
+      ...lists[listIndex],
+      ...listData,
+    };
+    
+    return simulateApiCall(updatedList);
+  } catch (error) {
+    console.error('Update list error:', error);
+    throw error;
+  }
+};
+
+// Delete list
+const deleteList = async (listId: string): Promise<void> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // await axios.delete(`${API_URL}/lists/${listId}`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    
+    // For demo, simulate API call
+    return simulateApiCall(undefined);
+  } catch (error) {
+    console.error('Delete list error:', error);
+    throw error;
+  }
+};
+
+// Update word
+const updateWord = async (wordId: string, wordData: {
+  value: string;
+  meaning: string;
+  context?: string;
+}): Promise<Word> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.put(`${API_URL}/words/${wordId}`, wordData, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call with a mock updated word
+    const mockUpdatedWord: Word = {
+      id: wordId,
+      listId: 'mock-list-id', // This would be the actual list ID in a real app
+      value: wordData.value,
+      meaning: wordData.meaning,
+      context: wordData.context,
+      createdAt: new Date().toISOString()
+    };
+    
+    return simulateApiCall(mockUpdatedWord);
+  } catch (error) {
+    console.error('Update word error:', error);
+    throw error;
+  }
+};
+
+// Get progress statistics
+const getProgressStats = async (timeRange: 'week' | 'month' | 'all'): Promise<ProgressStats> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.get(`${API_URL}/progress/stats?timeRange=${timeRange}`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call with mock data
+    const mockProgressStats: ProgressStats = {
+      summary: {
+        totalWords: 248,
+        learnedWords: 156,
+        masteredWords: 87,
+        averageScore: 78,
+        currentStreak: 5,
+        bestStreak: 12
+      },
+      daily: {
+        dates: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+        learningScores: [65, 70, 75, 72, 80, 85, 78],
+        testScores: [60, 65, 70, 75, 72, 78, 80]
+      },
+      listProgress: [
+        { id: 'list1', name: 'İngilizce Temel', progress: 90 },
+        { id: 'list2', name: 'İş İngilizcesi', progress: 65 },
+        { id: 'list3', name: 'Akademik Kelimeler', progress: 45 },
+        { id: 'list4', name: 'Günlük Konuşma', progress: 80 },
+        { id: 'list5', name: 'Seyahat Terimleri', progress: 30 }
+      ],
+      wordStats: [
+        { status: 'Öğrenildi', count: 156 },
+        { status: 'Ustalaşıldı', count: 87 },
+        { status: 'Öğreniliyor', count: 92 },
+        { status: 'Zor', count: 35 },
+        { status: 'Yeni', count: 52 }
+      ],
+      recommendedLists: [
+        {
+          id: 'list3',
+          name: 'Akademik Kelimeler',
+          wordCount: 50,
+          progress: 45,
+          reason: 'Düşük ilerleme oranı'
+        },
+        {
+          id: 'list5',
+          name: 'Seyahat Terimleri',
+          wordCount: 40,
+          progress: 30,
+          reason: 'Uzun süredir çalışılmadı'
+        }
+      ],
+      achievements: [
+        {
+          id: 'achievement1',
+          title: 'Kelime Ustası',
+          description: '100 kelime öğrenildi',
+          icon: 'trophy',
+          unlocked: true,
+          progress: 100
+        },
+        {
+          id: 'achievement2',
+          title: '7 Gün Serisi',
+          description: '7 gün üst üste çalışma',
+          icon: 'calendar-check',
+          unlocked: false,
+          progress: 71
+        }
+      ]
+    };
+    
+    return simulateApiCall(mockProgressStats);
+  } catch (error) {
+    console.error('Get progress stats error:', error);
+    throw error;
+  }
+};
+
+// Search words
+const searchWords = async (query: string, filters?: {
+  listId?: string;
+  sortBy?: 'date' | 'alphabetical';
+  sortOrder?: 'asc' | 'desc';
+}): Promise<Word[]> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.get(`${API_URL}/search/words`, {
+    //   params: { query, ...filters },
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call with mock data
+    const mockWords: Word[] = [
+      {
+        id: '1',
+        listId: '1',
+        value: 'apple',
+        meaning: 'elma',
+        context: 'I eat an apple every day.',
+        createdAt: '2025-03-15T10:30:00Z'
+      },
+      {
+        id: '2',
+        listId: '1',
+        value: 'application',
+        meaning: 'uygulama',
+        context: 'I downloaded a new application on my phone.',
+        createdAt: '2025-03-16T11:45:00Z'
+      },
+      {
+        id: '3',
+        listId: '2',
+        value: 'apply',
+        meaning: 'uygulamak',
+        context: 'You need to apply for the job before Friday.',
+        createdAt: '2025-03-17T09:15:00Z'
+      }
+    ].filter(word => word.value.includes(query) || word.meaning.includes(query));
+    
+    return simulateApiCall(mockWords);
+  } catch (error) {
+    console.error('Search words error:', error);
+    throw error;
+  }
+};
+
+// Get user settings
+const getUserSettings = async (): Promise<Settings> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.get(`${API_URL}/settings`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call with mock data
+    const mockSettings: Settings = {
+      theme: 'dark',
+      notifications: true,
+      defaultLanguage: 'en',
+      sessionLength: 15,
+      autoPlayPronunciation: true
+    };
+    
+    return simulateApiCall(mockSettings);
+  } catch (error) {
+    console.error('Get user settings error:', error);
+    throw error;
+  }
+};
+
+// Update user settings
+const updateUserSettings = async (settings: Partial<Settings>): Promise<Settings> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.put(`${API_URL}/settings`, settings, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate API call with mock data
+    const currentSettings = await getUserSettings();
+    const updatedSettings: Settings = {
+      ...currentSettings,
+      ...settings
+    };
+    
+    return simulateApiCall(updatedSettings);
+  } catch (error) {
+    console.error('Update user settings error:', error);
+    throw error;
+  }
+};
+
+// Export API functions
+export default {
+  // Auth
+  register,
+  login,
+  forgotPassword,
+  logout,
+  getCurrentUser,
+  
+  // Lists
+  getLists,
+  createList,
+  getListById,
+  updateList,
+  deleteList,
+  
+  // Words
+  getWordsByListId,
+  addWord,
+  addBulkWords,
+  updateWord,
+  deleteWord,
+  
+  // Progress
+  saveProgress,
+  saveTestResult,
+  getProgressStats,
+  
+  // Search
+  searchWords,
+  
+  // Settings
+  getUserSettings,
+  updateUserSettings
+};
+
+// Types for progress stats
+interface ProgressStats {
+  summary: {
+    totalWords: number;
+    learnedWords: number;
+    masteredWords: number;
+    averageScore: number;
+    currentStreak: number;
+    bestStreak: number;
+  };
+  daily: {
+    dates: string[];
+    learningScores: number[];
+    testScores: number[];
+  };
+  listProgress: {
+    id: string;
+    name: string;
+    progress: number;
+  }[];
+  wordStats: {
+    status: string;
+    count: number;
+  }[];
+  recommendedLists: {
+    id: string;
+    name: string;
+    wordCount: number;
+    progress: number;
+    reason: string;
+  }[];
+  achievements: {
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+    unlocked: boolean;
+    progress: number;
+  }[];
+}
+
+// Types for settings
+interface Settings {
+  theme: 'light' | 'dark' | 'system';
+  notifications: boolean;
+  defaultLanguage: string;
+  sessionLength: number;
+  autoPlayPronunciation: boolean;
+}

@@ -1,58 +1,61 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User, AuthState, AuthContextProps } from '../types';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import apiService from '../api/apiService';
+import { User, AuthState } from '../types';
 
-// Create the default auth state
-const defaultAuthState: AuthState = {
+// Define the shape of the context
+interface AuthContextType extends AuthState {
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+}
+
+// Create the context with a default value
+const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
   error: null,
-};
-
-// Create the context with default values
-const AuthContext = createContext<AuthContextProps>({
-  authState: defaultAuthState,
   login: async () => {},
   register: async () => {},
-  logout: () => {},
+  logout: async () => {},
+  forgotPassword: async () => ({ success: false, message: '' }),
 });
 
-// Hook to use the auth context
+// Custom hook to use the auth context
 export const useAuth = () => useContext(AuthContext);
 
-// Auth provider component
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [authState, setAuthState] = useState<AuthState>(defaultAuthState);
+// Provider component
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
-  // Check for existing token/user on load
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    isAuthenticated: false,
+    isLoading: true,
+    error: null,
+  });
+
+  // Check if user is already logged in
   useEffect(() => {
     const loadUser = async () => {
       try {
-        // This is just a placeholder - team should implement proper auth check
-        const userJson = await AsyncStorage.getItem('user');
-        const token = await AsyncStorage.getItem('token');
+        const user = await apiService.getCurrentUser();
         
-        if (userJson && token) {
-          const user = JSON.parse(userJson) as User;
-          setAuthState({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-        } else {
-          setAuthState({
-            ...defaultAuthState,
-            isLoading: false,
-          });
-        }
-      } catch (error) {
-        console.error('Error loading auth state:', error);
-        setAuthState({
-          ...defaultAuthState,
+        setState({
+          user,
+          isAuthenticated: !!user,
           isLoading: false,
-          error: 'Failed to load authentication state',
+          error: null,
+        });
+      } catch (error) {
+        setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: 'Failed to load user',
         });
       }
     };
@@ -63,95 +66,106 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Login function
   const login = async (email: string, password: string) => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      setState({ ...state, isLoading: true, error: null });
       
-      // This is just a placeholder - team should implement proper login
-      console.log('Login placeholder - to be implemented by team');
+      const { user } = await apiService.login(email, password);
       
-      // Simulate successful login
-      const mockUser: User = {
-        id: '1',
-        email,
-        name: 'Test User',
-        createdAt: new Date().toISOString(),
-      };
-      
-      // Store user and token
-      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-      await AsyncStorage.setItem('token', 'mock-token');
-      
-      setAuthState({
-        user: mockUser,
+      setState({
+        user,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
     } catch (error) {
-      console.error('Login error:', error);
-      setAuthState(prev => ({
-        ...prev,
+      setState({
+        ...state,
         isLoading: false,
-        error: 'Login failed. Please check your credentials.',
-      }));
+        error: 'Invalid email or password',
+      });
+      throw error;
     }
   };
 
   // Register function
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (name: string, email: string, password: string) => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      setState({ ...state, isLoading: true, error: null });
       
-      // This is just a placeholder - team should implement proper registration
-      console.log('Register placeholder - to be implemented by team');
+      const { user } = await apiService.register(name, email, password);
       
-      // Simulate successful registration
-      const mockUser: User = {
-        id: '1',
-        email,
-        name,
-        createdAt: new Date().toISOString(),
-      };
-      
-      // Store user and token
-      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-      await AsyncStorage.setItem('token', 'mock-token');
-      
-      setAuthState({
-        user: mockUser,
+      setState({
+        user,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
     } catch (error) {
-      console.error('Registration error:', error);
-      setAuthState(prev => ({
-        ...prev,
+      setState({
+        ...state,
         isLoading: false,
-        error: 'Registration failed. Please try again.',
-      }));
+        error: 'Registration failed',
+      });
+      throw error;
     }
   };
 
   // Logout function
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem('user');
-      await AsyncStorage.removeItem('token');
+      setState({ ...state, isLoading: true, error: null });
       
-      setAuthState({
-        ...defaultAuthState,
+      await apiService.logout();
+      
+      setState({
+        user: null,
+        isAuthenticated: false,
         isLoading: false,
+        error: null,
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      setState({
+        ...state,
+        isLoading: false,
+        error: 'Logout failed',
+      });
+      throw error;
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ authState, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  // Forgot password function
+  const forgotPassword = async (email: string) => {
+    try {
+      setState({ ...state, isLoading: true, error: null });
+      
+      const result = await apiService.forgotPassword(email);
+      
+      setState({
+        ...state,
+        isLoading: false,
+        error: null,
+      });
+      
+      return result;
+    } catch (error) {
+      setState({
+        ...state,
+        isLoading: false,
+        error: 'Password reset failed',
+      });
+      throw error;
+    }
+  };
+
+  // Context value
+  const value = {
+    ...state,
+    login,
+    register,
+    logout,
+    forgotPassword,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export default AuthContext;
