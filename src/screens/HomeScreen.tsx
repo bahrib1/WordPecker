@@ -3,12 +3,8 @@ import { View, StyleSheet, ScrollView, Text, Platform, Dimensions } from 'react-
 import { Button, Card, Title, Paragraph } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types';
 import { commonStyles } from '../styles/theme';
-
-type RootStackParamList = {
-  Home: undefined;
-  FeaturePlaceholder: { featureId: number; featureName: string; description: string };
-};
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -143,26 +139,26 @@ const features = [
   },
   {
     id: 11,
-    name: 'Yenilikçi Özellik 1',
-    description: 'Mobil özellikleri kullanan ve dil öğrenmeyi geliştiren ilk yenilikçi özelliğinizi tasarlayın.',
+    name: 'Kamera ile Kelime Tarama',
+    description: 'Kamera kullanarak basılı metinlerden kelime tarama ve listeye ekleme.',
     expectedFunctionality: [
-      'Temel uygulamada olmayan benzersiz değer önerisi',
-      'Mobil özelliklerin kullanımı',
-      'Mevcut özelliklerle entegrasyon',
-      'Kullanıcı dostu deneyim',
-      'Performans değerlendirmesi'
+      'Kamera erişimi ve OCR entegrasyonu',
+      'Metin tanıma algoritması',
+      'Kelime seçme ve düzenleme arayüzü',
+      'Tanınan kelimeleri listeye ekleme mekanizması',
+      'Performans optimizasyonu'
     ]
   },
   {
     id: 12,
-    name: 'Yenilikçi Özellik 2',
-    description: 'Mobil dil öğrenenler için benzersiz bir avantaj sunan ikinci yenilikçi özelliğinizi tasarlayın.',
+    name: 'Sesli Komut ve Telaffuz',
+    description: 'Sesli komutlarla uygulamayı kontrol etme ve telaffuz pratiği yapma.',
     expectedFunctionality: [
-      'Öğrenme etkinliğini artıran özgün fikir',
-      'Mobil öncelikli tasarım yaklaşımı',
-      'Uygulama iş akışıyla entegrasyon',
-      'Erişilebilir ve sezgisel arayüz',
-      'Kaynak verimli uygulama'
+      'Ses tanıma API entegrasyonu',
+      'Sesli komut sistemi',
+      'Telaffuz değerlendirme mekanizması',
+      'Sesli geri bildirim sistemi',
+      'Erişilebilirlik özellikleri'
     ]
   }
 ];
@@ -171,20 +167,52 @@ const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
 
   const navigateToFeature = (feature: typeof features[0]) => {
-    // For implemented features, navigate directly to their screens
-    if (feature.id === 1) {
-      // User Authentication - Navigate to Profile
-      navigation.navigate('Profile');
-    } else if (feature.id === 2) {
-      // Word Lists
-      navigation.navigate('Lists');
-    } else {
-      // For other features, use placeholder
-      navigation.navigate('FeaturePlaceholder', {
-        featureId: feature.id,
-        featureName: feature.name,
-        description: feature.description
-      });
+    // Navigate directly to implemented features
+    switch (feature.id) {
+      case 1: // Kullanıcı Girişi
+        navigation.navigate('Profile');
+        break;
+      case 2: // Kelime Listeleri
+        navigation.navigate('Lists');
+        break;
+      case 3: // Liste Oluştur
+        navigation.navigate('CreateList');
+        break;
+      case 4: // Kelime Ekle
+        // For AddWord, we need a listId, so we'll navigate to Lists first
+        navigation.navigate('Lists');
+        break;
+      case 5: // Öğrenme Modu
+        // For Learning, we need a listId, so we'll navigate to Lists first
+        navigation.navigate('Lists');
+        break;
+      case 6: // Test Modu
+        // For Test, we need a listId, so we'll navigate to Lists first
+        navigation.navigate('Lists');
+        break;
+      case 7: // Liste Detayları
+        // For ListDetails, we need a listId, so we'll navigate to Lists first
+        navigation.navigate('Lists');
+        break;
+      case 8: // İlerleme Takibi
+        navigation.navigate('Progress');
+        break;
+      case 9: // Arama
+        navigation.navigate('Search');
+        break;
+      case 10: // Ayarlar
+        navigation.navigate('Settings');
+        break;
+      case 11: // Kamera ile Kelime Tarama
+        navigation.navigate('CameraScan');
+        break;
+      case 12: // Sesli Komut ve Telaffuz
+        navigation.navigate('VoiceCommands');
+        break;
+      default:
+        // This should never happen with our current feature set
+        console.warn(`No navigation defined for feature ID ${feature.id}`);
+        break;
     }
   };
 
@@ -192,9 +220,7 @@ const HomeScreen = () => {
     return (
       <View style={styles.container}>
         <Text style={styles.instructions}>
-          Bu proje 12 özellik için yer tutucu ekranlar içermektedir.
-          Göreviniz temel özellikleri uygulamak ve 2 yenilikçi özellik geliştirmektir.
-          Özellik açıklaması ve gereksinimlerini görmek için her bir düğmeye tıklayın.
+          WordPecker dil öğrenme uygulamasına hoş geldiniz. Aşağıdaki özelliklerden birini seçerek başlayabilirsiniz.
         </Text>
         
         <View style={styles.grid}>
@@ -230,9 +256,7 @@ const HomeScreen = () => {
     >
       {/* Mobil için mevcut içerik */}
       <Text style={styles.instructions}>
-        Bu proje 12 özellik için yer tutucu ekranlar içermektedir.
-        Göreviniz temel özellikleri uygulamak ve 2 yenilikçi özellik geliştirmektir.
-        Özellik açıklaması ve gereksinimlerini görmek için her bir düğmeye tıklayın.
+        WordPecker dil öğrenme uygulamasına hoş geldiniz. Aşağıdaki özelliklerden birini seçerek başlayabilirsiniz.
       </Text>
       
       <View style={styles.grid}>
