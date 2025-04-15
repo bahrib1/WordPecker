@@ -75,15 +75,11 @@ const login = async (email: string, password: string): Promise<{ user: User; tok
     // return response.data;
     
     // For demo, simulate API call
-    // Validate credentials (in a real app, this would be done server-side)
-    if (email !== 'test@example.com' && password !== 'password123') {
-      throw new Error('Invalid credentials');
-    }
-    
+    // Allow any credentials for demo purposes
     const mockUser: User = {
       id: '1',
       email,
-      name: 'Test User',
+      name: email.split('@')[0],
       createdAt: new Date().toISOString()
     };
     
@@ -146,15 +142,9 @@ const getCurrentUser = async (): Promise<User | null> => {
     // });
     // return response.data;
     
-    // For demo, simulate API call
-    const mockUser: User = {
-      id: '1',
-      email: 'test@example.com',
-      name: 'Test User',
-      createdAt: new Date().toISOString()
-    };
-    
-    return simulateApiCall(mockUser);
+    // For demo, we'll return null to force login screen to show first
+    // This simulates a fresh install or a logged out state
+    return null;
   } catch (error) {
     console.error('Get current user error:', error);
     return null;
@@ -579,6 +569,172 @@ const updateWord = async (wordId: string, wordData: {
   }
 };
 
+// Get search history
+const getSearchHistory = async (): Promise<string[]> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.get(`${API_URL}/search/history`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, get from AsyncStorage
+    const historyJson = await AsyncStorage.getItem('search_history');
+    return historyJson ? JSON.parse(historyJson) : [];
+  } catch (error) {
+    console.error('Get search history error:', error);
+    return [];
+  }
+};
+
+// Save search history
+const saveSearchHistory = async (history: string[]): Promise<void> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // await axios.post(`${API_URL}/search/history`, { history }, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    
+    // For demo, save to AsyncStorage
+    await AsyncStorage.setItem('search_history', JSON.stringify(history));
+    return simulateApiCall(undefined, 100); // Faster response for better UX
+  } catch (error) {
+    console.error('Save search history error:', error);
+    throw error;
+  }
+};
+
+// Clear search history
+const clearSearchHistory = async (): Promise<void> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // await axios.delete(`${API_URL}/search/history`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    
+    // For demo, remove from AsyncStorage
+    await AsyncStorage.removeItem('search_history');
+    return simulateApiCall(undefined, 100); // Faster response for better UX
+  } catch (error) {
+    console.error('Clear search history error:', error);
+    throw error;
+  }
+};
+
+// Search
+const search = async (
+  query: string, 
+  filter: 'all' | 'lists' | 'words' = 'all',
+  sortBy: 'relevance' | 'date' = 'relevance'
+): Promise<SearchResult[]> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // const response = await axios.get(`${API_URL}/search?query=${query}&filter=${filter}&sortBy=${sortBy}`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    
+    // For demo, simulate search results
+    // First get lists and words
+    const lists = await getLists();
+    
+    // Mock search results
+    const mockResults: SearchResult[] = [];
+    
+    // Add list results if filter is 'all' or 'lists'
+    if (filter === 'all' || filter === 'lists') {
+      const matchingLists = lists.filter(list => 
+        list.name.toLowerCase().includes(query.toLowerCase()) || 
+        (list.description && list.description.toLowerCase().includes(query.toLowerCase()))
+      );
+      
+      matchingLists.forEach(list => {
+        mockResults.push({
+          type: 'list',
+          id: list.id,
+          title: list.name,
+          subtitle: `${list.wordCount} kelime`,
+          context: list.description
+        });
+      });
+    }
+    
+    // Add word results if filter is 'all' or 'words'
+    if (filter === 'all' || filter === 'words') {
+      // For demo, just add some mock word results
+      if (query.toLowerCase().includes('elma') || query.toLowerCase().includes('apple')) {
+        mockResults.push({
+          type: 'word',
+          id: 'word1',
+          title: 'apple',
+          subtitle: 'elma',
+          context: 'I eat an apple every day.',
+          listId: '1',
+          listName: 'Temel İngilizce'
+        });
+      }
+      
+      if (query.toLowerCase().includes('kitap') || query.toLowerCase().includes('book')) {
+        mockResults.push({
+          type: 'word',
+          id: 'word2',
+          title: 'book',
+          subtitle: 'kitap',
+          context: 'I read a book before bed.',
+          listId: '1',
+          listName: 'Temel İngilizce'
+        });
+      }
+      
+      if (query.toLowerCase().includes('bilgisayar') || query.toLowerCase().includes('computer')) {
+        mockResults.push({
+          type: 'word',
+          id: 'word3',
+          title: 'computer',
+          subtitle: 'bilgisayar',
+          listId: '1',
+          listName: 'Temel İngilizce'
+        });
+      }
+    }
+    
+    // Sort results
+    if (sortBy === 'date') {
+      // In a real app, we would sort by date
+      // For demo, just reverse the order
+      mockResults.reverse();
+    }
+    
+    return simulateApiCall(mockResults);
+  } catch (error) {
+    console.error('Search error:', error);
+    throw error;
+  }
+};
 // Get progress statistics
 const getProgressStats = async (timeRange: 'week' | 'month' | 'all'): Promise<ProgressStats> => {
   try {
@@ -610,10 +766,6 @@ const getProgressStats = async (timeRange: 'week' | 'month' | 'all'): Promise<Pr
         testScores: [60, 65, 70, 75, 72, 78, 80]
       },
       listProgress: [
-        { id: 'list1', name: 'İngilizce Temel', progress: 90 },
-        { id: 'list2', name: 'İş İngilizcesi', progress: 65 },
-        { id: 'list3', name: 'Akademik Kelimeler', progress: 45 },
-        { id: 'list4', name: 'Günlük Konuşma', progress: 80 },
         { id: 'list5', name: 'Seyahat Terimleri', progress: 30 }
       ],
       wordStats: [
@@ -811,10 +963,17 @@ export default {
   
   // Search
   searchWords,
+  getSearchHistory,
+  saveSearchHistory,
+  clearSearchHistory,
+  search,
   
   // Settings
   getUserSettings,
-  updateUserSettings
+  updateUserSettings,
+  getSettings: getUserSettings,
+  updateSettings: updateUserSettings,
+  clearUserData
 };
 
 // Types for progress stats
@@ -866,3 +1025,25 @@ interface Settings {
   sessionLength: number;
   autoPlayPronunciation: boolean;
 }
+
+// Clear user data
+const clearUserData = async (): Promise<void> => {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // In a real app, this would be an API call
+    // await axios.delete(`${API_URL}/user/data`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    
+    // For demo, simulate API call
+    return simulateApiCall(undefined, 1000);
+  } catch (error) {
+    console.error('Clear user data error:', error);
+    throw error;
+  }
+};

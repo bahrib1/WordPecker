@@ -250,7 +250,7 @@ const AddWordScreen = () => {
 
   // Handle finish
   const handleFinish = () => {
-    navigation.navigate('Lists');
+    navigation.goBack();
   };
 
   // Render single word form

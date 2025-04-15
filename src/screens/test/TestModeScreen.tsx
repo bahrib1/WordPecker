@@ -382,7 +382,7 @@ const TestModeScreen = () => {
   const confirmQuit = () => {
     setTimerActive(false);
     setShowQuitDialog(false);
-    navigation.goBack();
+    navigation.navigate('ListDetails', { listId });
   };
 
   // Cancel quit
@@ -406,7 +406,7 @@ const TestModeScreen = () => {
       <View style={styles.errorContainer}>
         <MaterialCommunityIcons name="alert-circle" size={64} color="#EF4444" />
         <Text style={styles.errorText}>{error}</Text>
-        <Button mode="contained" onPress={() => navigation.goBack()} style={styles.errorButton}>
+        <Button mode="contained" onPress={() => navigation.navigate('ListDetails', { listId })} style={styles.errorButton}>
           Geri Dön
         </Button>
       </View>

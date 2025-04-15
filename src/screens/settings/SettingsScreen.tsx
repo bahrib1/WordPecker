@@ -6,11 +6,13 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Settings } from '../../types';
 import apiService from '../../api/apiService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 
 type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Settings'>;
 
 const SettingsScreen = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const { theme, setTheme } = useTheme();
   
   // State
   const [settings, setSettings] = useState<Settings>({
@@ -67,8 +69,12 @@ const SettingsScreen = () => {
   };
   
   // Handle theme change
-  const handleThemeChange = (theme: 'light' | 'dark' | 'system') => {
-    const updatedSettings = { ...settings, theme };
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    // Update app theme using ThemeContext
+    setTheme(newTheme);
+    
+    // Also save to settings API for persistence
+    const updatedSettings = { ...settings, theme: newTheme };
     saveSettings(updatedSettings);
   };
   
@@ -143,21 +149,21 @@ const SettingsScreen = () => {
   
   // Render theme options
   const renderThemeOptions = () => (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { backgroundColor: theme === 'light' ? '#FFFFFF' : '#1E293B', borderColor: theme === 'light' ? '#E2E8F0' : '#334155' }]}>
       <Card.Content>
-        <Text style={styles.cardTitle}>Tema</Text>
+        <Text style={[styles.cardTitle, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Tema</Text>
         <RadioButton.Group onValueChange={(value) => handleThemeChange(value as 'light' | 'dark' | 'system')} value={settings.theme}>
           <View style={styles.radioItem}>
             <RadioButton value="light" />
-            <Text style={styles.radioLabel}>Açık Tema</Text>
+            <Text style={[styles.radioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Açık Tema</Text>
           </View>
           <View style={styles.radioItem}>
             <RadioButton value="dark" />
-            <Text style={styles.radioLabel}>Koyu Tema</Text>
+            <Text style={[styles.radioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Koyu Tema</Text>
           </View>
           <View style={styles.radioItem}>
             <RadioButton value="system" />
-            <Text style={styles.radioLabel}>Sistem Teması</Text>
+            <Text style={[styles.radioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Sistem Teması</Text>
           </View>
         </RadioButton.Group>
       </Card.Content>
@@ -166,11 +172,11 @@ const SettingsScreen = () => {
   
   // Render notification settings
   const renderNotificationSettings = () => (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { backgroundColor: theme === 'light' ? '#FFFFFF' : '#1E293B', borderColor: theme === 'light' ? '#E2E8F0' : '#334155' }]}>
       <Card.Content>
-        <Text style={styles.cardTitle}>Bildirimler</Text>
+        <Text style={[styles.cardTitle, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Bildirimler</Text>
         <View style={styles.switchItem}>
-          <Text style={styles.switchLabel}>Bildirimleri Etkinleştir</Text>
+          <Text style={[styles.switchLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Bildirimleri Etkinleştir</Text>
           <Switch
             value={settings.notifications}
             onValueChange={handleNotificationsToggle}
@@ -179,8 +185,8 @@ const SettingsScreen = () => {
         </View>
         {settings.notifications && (
           <>
-            <Divider style={styles.divider} />
-            <Text style={styles.description}>
+            <Divider style={[styles.divider, { backgroundColor: theme === 'light' ? '#E2E8F0' : '#334155' }]} />
+            <Text style={[styles.description, { color: theme === 'light' ? '#64748B' : '#94A3B8' }]}>
               Bildirimler, düzenli çalışmanızı hatırlatmak ve öğrenme hedeflerinize ulaşmanıza yardımcı olmak için kullanılır.
             </Text>
           </>
@@ -191,15 +197,17 @@ const SettingsScreen = () => {
   
   // Render language settings
   const renderLanguageSettings = () => (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { backgroundColor: theme === 'light' ? '#FFFFFF' : '#1E293B', borderColor: theme === 'light' ? '#E2E8F0' : '#334155' }]}>
       <Card.Content>
-        <Text style={styles.cardTitle}>Dil Ayarları</Text>
+        <Text style={[styles.cardTitle, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Dil Ayarları</Text>
         <List.Item
           title="Varsayılan Öğrenme Dili"
           description={getLanguageName(settings.defaultLanguage)}
           onPress={() => setShowLanguageDialog(true)}
           right={props => <List.Icon {...props} icon="chevron-right" />}
           style={styles.listItem}
+          titleStyle={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}
+          descriptionStyle={{ color: theme === 'light' ? '#64748B' : '#94A3B8' }}
         />
         <List.Item
           title="Oturum Süresi"
@@ -207,9 +215,11 @@ const SettingsScreen = () => {
           onPress={() => setShowSessionLengthDialog(true)}
           right={props => <List.Icon {...props} icon="chevron-right" />}
           style={styles.listItem}
+          titleStyle={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}
+          descriptionStyle={{ color: theme === 'light' ? '#64748B' : '#94A3B8' }}
         />
         <View style={styles.switchItem}>
-          <Text style={styles.switchLabel}>Otomatik Telaffuz</Text>
+          <Text style={[styles.switchLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Otomatik Telaffuz</Text>
           <Switch
             value={settings.autoPlayPronunciation}
             onValueChange={handleAutoPlayPronunciationToggle}
@@ -222,16 +232,18 @@ const SettingsScreen = () => {
   
   // Render account settings
   const renderAccountSettings = () => (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { backgroundColor: theme === 'light' ? '#FFFFFF' : '#1E293B', borderColor: theme === 'light' ? '#E2E8F0' : '#334155' }]}>
       <Card.Content>
-        <Text style={styles.cardTitle}>Hesap</Text>
+        <Text style={[styles.cardTitle, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Hesap</Text>
         <List.Item
           title="Profil"
           description="Profil bilgilerinizi düzenleyin"
           onPress={() => navigation.navigate('Profile')}
-          left={props => <List.Icon {...props} icon="account" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
+          left={props => <List.Icon {...props} icon="account" color={theme === 'light' ? '#0F172A' : '#FFFFFF'} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme === 'light' ? '#64748B' : '#94A3B8'} />}
           style={styles.listItem}
+          titleStyle={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}
+          descriptionStyle={{ color: theme === 'light' ? '#64748B' : '#94A3B8' }}
         />
         <List.Item
           title="Verileri Temizle"
@@ -239,6 +251,8 @@ const SettingsScreen = () => {
           onPress={() => setShowClearDataDialog(true)}
           left={props => <List.Icon {...props} icon="delete" color="#EF4444" />}
           style={styles.listItem}
+          titleStyle={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}
+          descriptionStyle={{ color: theme === 'light' ? '#64748B' : '#94A3B8' }}
         />
         <List.Item
           title="Çıkış Yap"
@@ -246,6 +260,8 @@ const SettingsScreen = () => {
           onPress={() => setShowLogoutDialog(true)}
           left={props => <List.Icon {...props} icon="logout" color="#EF4444" />}
           style={styles.listItem}
+          titleStyle={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}
+          descriptionStyle={{ color: theme === 'light' ? '#64748B' : '#94A3B8' }}
         />
       </Card.Content>
     </Card>
@@ -253,42 +269,47 @@ const SettingsScreen = () => {
   
   // Render about section
   const renderAboutSection = () => (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { backgroundColor: theme === 'light' ? '#FFFFFF' : '#1E293B', borderColor: theme === 'light' ? '#E2E8F0' : '#334155' }]}>
       <Card.Content>
-        <Text style={styles.cardTitle}>Hakkında</Text>
+        <Text style={[styles.cardTitle, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Hakkında</Text>
         <List.Item
           title="Uygulama Versiyonu"
           description="1.0.0"
-          left={props => <List.Icon {...props} icon="information" />}
+          left={props => <List.Icon {...props} icon="information" color={theme === 'light' ? '#0F172A' : '#FFFFFF'} />}
           style={styles.listItem}
+          titleStyle={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}
+          descriptionStyle={{ color: theme === 'light' ? '#64748B' : '#94A3B8' }}
         />
         <List.Item
           title="Gizlilik Politikası"
           onPress={() => {/* Navigate to privacy policy */}}
-          left={props => <List.Icon {...props} icon="shield-account" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
+          left={props => <List.Icon {...props} icon="shield-account" color={theme === 'light' ? '#0F172A' : '#FFFFFF'} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme === 'light' ? '#64748B' : '#94A3B8'} />}
           style={styles.listItem}
+          titleStyle={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}
         />
         <List.Item
           title="Kullanım Koşulları"
           onPress={() => {/* Navigate to terms of service */}}
-          left={props => <List.Icon {...props} icon="file-document" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
+          left={props => <List.Icon {...props} icon="file-document" color={theme === 'light' ? '#0F172A' : '#FFFFFF'} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme === 'light' ? '#64748B' : '#94A3B8'} />}
           style={styles.listItem}
+          titleStyle={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}
         />
         <List.Item
           title="Açık Kaynak Lisansları"
           onPress={() => {/* Navigate to open source licenses */}}
-          left={props => <List.Icon {...props} icon="license" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
+          left={props => <List.Icon {...props} icon="license" color={theme === 'light' ? '#0F172A' : '#FFFFFF'} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme === 'light' ? '#64748B' : '#94A3B8'} />}
           style={styles.listItem}
+          titleStyle={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}
         />
       </Card.Content>
     </Card>
   );
   
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme === 'light' ? '#F8FAFC' : '#0F172A' }]}>
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {/* Theme Options */}
         {renderThemeOptions()}
@@ -313,33 +334,37 @@ const SettingsScreen = () => {
       
       {/* Language Dialog */}
       <Portal>
-        <Dialog visible={showLanguageDialog} onDismiss={() => setShowLanguageDialog(false)}>
-          <Dialog.Title>Varsayılan Öğrenme Dili</Dialog.Title>
+        <Dialog 
+          visible={showLanguageDialog} 
+          onDismiss={() => setShowLanguageDialog(false)}
+          style={{ backgroundColor: theme === 'light' ? '#FFFFFF' : '#1E293B' }}
+        >
+          <Dialog.Title style={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}>Varsayılan Öğrenme Dili</Dialog.Title>
           <Dialog.Content>
             <RadioButton.Group onValueChange={(value) => handleLanguageChange(value)} value={settings.defaultLanguage}>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="en" />
-                <Text style={styles.dialogRadioLabel}>İngilizce</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>İngilizce</Text>
               </View>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="de" />
-                <Text style={styles.dialogRadioLabel}>Almanca</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Almanca</Text>
               </View>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="fr" />
-                <Text style={styles.dialogRadioLabel}>Fransızca</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Fransızca</Text>
               </View>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="es" />
-                <Text style={styles.dialogRadioLabel}>İspanyolca</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>İspanyolca</Text>
               </View>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="it" />
-                <Text style={styles.dialogRadioLabel}>İtalyanca</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>İtalyanca</Text>
               </View>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="tr" />
-                <Text style={styles.dialogRadioLabel}>Türkçe</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>Türkçe</Text>
               </View>
             </RadioButton.Group>
           </Dialog.Content>
@@ -351,29 +376,33 @@ const SettingsScreen = () => {
       
       {/* Session Length Dialog */}
       <Portal>
-        <Dialog visible={showSessionLengthDialog} onDismiss={() => setShowSessionLengthDialog(false)}>
-          <Dialog.Title>Oturum Süresi</Dialog.Title>
+        <Dialog 
+          visible={showSessionLengthDialog} 
+          onDismiss={() => setShowSessionLengthDialog(false)}
+          style={{ backgroundColor: theme === 'light' ? '#FFFFFF' : '#1E293B' }}
+        >
+          <Dialog.Title style={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}>Oturum Süresi</Dialog.Title>
           <Dialog.Content>
             <RadioButton.Group onValueChange={(value) => handleSessionLengthChange(parseInt(value))} value={settings.sessionLength.toString()}>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="5" />
-                <Text style={styles.dialogRadioLabel}>5 dakika</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>5 dakika</Text>
               </View>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="10" />
-                <Text style={styles.dialogRadioLabel}>10 dakika</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>10 dakika</Text>
               </View>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="15" />
-                <Text style={styles.dialogRadioLabel}>15 dakika</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>15 dakika</Text>
               </View>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="20" />
-                <Text style={styles.dialogRadioLabel}>20 dakika</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>20 dakika</Text>
               </View>
               <View style={styles.dialogRadioItem}>
                 <RadioButton value="30" />
-                <Text style={styles.dialogRadioLabel}>30 dakika</Text>
+                <Text style={[styles.dialogRadioLabel, { color: theme === 'light' ? '#0F172A' : '#FFFFFF' }]}>30 dakika</Text>
               </View>
             </RadioButton.Group>
           </Dialog.Content>
@@ -385,10 +414,14 @@ const SettingsScreen = () => {
       
       {/* Logout Dialog */}
       <Portal>
-        <Dialog visible={showLogoutDialog} onDismiss={() => setShowLogoutDialog(false)}>
-          <Dialog.Title>Çıkış Yap</Dialog.Title>
+        <Dialog 
+          visible={showLogoutDialog} 
+          onDismiss={() => setShowLogoutDialog(false)}
+          style={{ backgroundColor: theme === 'light' ? '#FFFFFF' : '#1E293B' }}
+        >
+          <Dialog.Title style={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}>Çıkış Yap</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>Hesabınızdan çıkış yapmak istediğinize emin misiniz?</Paragraph>
+            <Paragraph style={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}>Hesabınızdan çıkış yapmak istediğinize emin misiniz?</Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setShowLogoutDialog(false)}>İptal</Button>
@@ -399,10 +432,14 @@ const SettingsScreen = () => {
       
       {/* Clear Data Dialog */}
       <Portal>
-        <Dialog visible={showClearDataDialog} onDismiss={() => setShowClearDataDialog(false)}>
-          <Dialog.Title>Verileri Temizle</Dialog.Title>
+        <Dialog 
+          visible={showClearDataDialog} 
+          onDismiss={() => setShowClearDataDialog(false)}
+          style={{ backgroundColor: theme === 'light' ? '#FFFFFF' : '#1E293B' }}
+        >
+          <Dialog.Title style={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}>Verileri Temizle</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>
+            <Paragraph style={{ color: theme === 'light' ? '#0F172A' : '#FFFFFF' }}>
               Tüm kullanıcı verileriniz silinecek. Bu işlem geri alınamaz. Devam etmek istediğinize emin misiniz?
             </Paragraph>
           </Dialog.Content>

@@ -157,7 +157,7 @@ const ListDetailsScreen = () => {
     try {
       await apiService.deleteList(listId);
       setShowDeleteDialog(false);
-      navigation.goBack();
+      navigation.navigate('Lists');
     } catch (error) {
       console.error('Error deleting list:', error);
       Alert.alert('Hata', 'Liste silinirken bir hata oluştu.');
@@ -253,7 +253,7 @@ const ListDetailsScreen = () => {
       <View style={styles.errorContainer}>
         <MaterialCommunityIcons name="alert-circle" size={64} color="#EF4444" />
         <Text style={styles.errorText}>{error}</Text>
-        <Button mode="contained" onPress={() => navigation.goBack()} style={styles.errorButton}>
+        <Button mode="contained" onPress={() => navigation.navigate('Lists')} style={styles.errorButton}>
           Geri Dön
         </Button>
       </View>
@@ -266,7 +266,7 @@ const ListDetailsScreen = () => {
       <View style={styles.emptyContainer}>
         <MaterialCommunityIcons name="playlist-remove" size={64} color="#94A3B8" />
         <Text style={styles.emptyText}>Liste bulunamadı.</Text>
-        <Button mode="contained" onPress={() => navigation.goBack()} style={styles.emptyButton}>
+        <Button mode="contained" onPress={() => navigation.navigate('Lists')} style={styles.emptyButton}>
           Geri Dön
         </Button>
       </View>

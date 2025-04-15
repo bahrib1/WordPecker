@@ -12,14 +12,29 @@ import { processImageWithOCR, DetectedWord } from '../../utils/ocrService';
 
 type CameraScanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CameraScan'>;
 
+// Define default camera constants in case they're undefined
+const DEFAULT_CAMERA_CONSTANTS = {
+  Type: {
+    back: 'back',
+    front: 'front'
+  },
+  FlashMode: {
+    off: 'off',
+    on: 'on'
+  }
+};
+
 const CameraScanScreen = () => {
   const navigation = useNavigation<CameraScanScreenNavigationProp>();
   const cameraRef = useRef<Camera>(null);
   
+  // Use Camera.Constants if available, otherwise use defaults
+  const CameraConstants = Camera.Constants || DEFAULT_CAMERA_CONSTANTS;
+  
   // State
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [cameraType, setCameraType] = useState(Camera.Constants.Type.back);
-  const [flashMode, setFlashMode] = useState(Camera.Constants.FlashMode.off);
+  const [cameraType, setCameraType] = useState(CameraConstants.Type.back);
+  const [flashMode, setFlashMode] = useState(CameraConstants.FlashMode.off);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -63,18 +78,18 @@ const CameraScanScreen = () => {
   // Toggle flash mode
   const toggleFlash = () => {
     setFlashMode(
-      flashMode === Camera.Constants.FlashMode.off
-        ? Camera.Constants.FlashMode.on
-        : Camera.Constants.FlashMode.off
+      flashMode === CameraConstants.FlashMode.off
+        ? CameraConstants.FlashMode.on
+        : CameraConstants.FlashMode.off
     );
   };
   
   // Toggle camera type
   const toggleCameraType = () => {
     setCameraType(
-      cameraType === Camera.Constants.Type.back
-        ? Camera.Constants.Type.front
-        : Camera.Constants.Type.back
+      cameraType === CameraConstants.Type.back
+        ? CameraConstants.Type.front
+        : CameraConstants.Type.back
     );
   };
   

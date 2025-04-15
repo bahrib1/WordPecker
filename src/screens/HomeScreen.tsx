@@ -1,348 +1,444 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, Text, Platform, Dimensions } from 'react-native';
-import { Button, Card, Title, Paragraph } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Text, Platform, Dimensions, Image } from 'react-native';
+import { Button, Card, Title, Paragraph, Avatar, IconButton } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
-import { commonStyles } from '../styles/theme';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
-// Özellik tanımlamaları
-const features = [
+// Ana özellikler - daha basit ve kullanıcı dostu bir arayüz için
+const mainFeatures = [
   {
     id: 1,
-    name: 'Kullanıcı Girişi',
-    description: 'E-posta/şifre ve sosyal medya ile güvenli ve kullanıcı dostu giriş/kayıt sistemi.',
-    expectedFunctionality: [
-      'E-posta/şifre ile kullanıcı kaydı',
-      'E-posta/şifre ile giriş',
-      'Şifre kurtarma',
-      'Kullanıcı profili görüntüleme ve yönetimi',
-      'Oturum yönetimi',
-      'Güvenli token saklama'
-    ]
+    name: 'Kelime Listeleri',
+    description: 'Tüm kelime listelerinizi görüntüleyin ve yönetin',
+    icon: 'format-list-bulleted',
+    route: 'Lists',
+    color: '#4CAF50' // Yeşil
   },
   {
     id: 2,
-    name: 'Kelime Listeleri',
-    description: 'Kullanıcının oluşturduğu tüm kelime listelerini detayları ve yönetim seçenekleriyle görüntüleme.',
-    expectedFunctionality: [
-      'Tüm listeleri önizleme bilgileriyle gösterme',
-      'Liste sıralama ve filtreleme seçenekleri',
-      'Hızlı eylemler (öğrenme, test, detaylar)',
-      'İlerleme göstergeleri',
-      'Yenileme ve sayfalama'
-    ]
+    name: 'Liste Oluştur',
+    description: 'Yeni bir kelime listesi oluşturun',
+    icon: 'playlist-plus',
+    route: 'CreateList',
+    color: '#2196F3' // Mavi
   },
   {
     id: 3,
-    name: 'Liste Oluştur',
-    description: 'İsim, açıklama ve bağlam bilgileriyle yeni kelime listesi oluşturma.',
-    expectedFunctionality: [
-      'Doğrulama ile liste oluşturma formu',
-      'İsteğe bağlı kaynak belirtme alanı',
-      'Liste için dil seçimi',
-      'Oluşturma sonrası kelime ekleme seçeneği',
-      'Yaygın liste türleri için şablonlar'
-    ]
+    name: 'Kelime Ekle',
+    description: 'Mevcut listeye anlamları ve bağlam örnekleriyle yeni kelimeler ekleyin',
+    icon: 'plus-circle',
+    route: 'AddWord',
+    params: { listId: '1' },
+    color: '#E91E63' // Pembe
   },
   {
     id: 4,
-    name: 'Kelime Ekle',
-    description: 'Mevcut listeye anlamları ve bağlam örnekleriyle yeni kelimeler ekleme.',
-    expectedFunctionality: [
-      'Otomatik tamamlama önerileriyle kelime ekleme formu',
-      'API ile otomatik anlam getirme',
-      'Toplu kelime ekleme özelliği',
-      'Bağlam örneği alanı',
-      'Resim/telaffuz ilişkilendirme (opsiyonel)'
-    ]
+    name: 'Öğrenme Modu',
+    description: 'Kelimelerinizi interaktif alıştırmalarla öğrenin',
+    icon: 'school',
+    route: 'Learning',
+    params: { listId: '1' },
+    color: '#FF9800' // Turuncu
   },
   {
     id: 5,
-    name: 'Öğrenme Modu',
-    description: 'Duolingo tarzı alıştırmalarla liste kelimelerini öğrenme deneyimi.',
-    expectedFunctionality: [
-      'Çoktan seçmeli alıştırmalar',
-      'Oturum sırasında ilerleme takibi',
-      'Motivasyon için seri sayacı',
-      'Cevaplara geri bildirim',
-      'Oturum devamı ve geçmişi',
-      'Çeşitli alıştırma türleri'
-    ]
+    name: 'Test Modu',
+    description: 'Bilginizi test edin ve ilerlemenizi ölçün',
+    icon: 'clipboard-check',
+    route: 'Test',
+    params: { listId: '1' },
+    color: '#9C27B0' // Mor
+  }
+];
+
+// İkincil özellikler
+const secondaryFeatures = [
+  {
+    id: 5,
+    name: 'İlerleme Takibi',
+    icon: 'chart-line',
+    route: 'Progress',
+    color: '#00BCD4' // Açık Mavi
   },
   {
     id: 6,
-    name: 'Test Modu',
-    description: 'Liste kelimelerini daha zorlu bir test formatıyla sınama.',
-    expectedFunctionality: [
-      'Öğrenme modundan daha zorlu sorular',
-      'Puan takibi ve geçmişi',
-      'Süre sınırı seçeneği',
-      'Yanlış cevapları gözden geçirme',
-      'Test sonuç özeti',
-      'Sonuçları paylaşma özelliği'
-    ]
+    name: 'Arama',
+    icon: 'magnify',
+    route: 'Search',
+    color: '#607D8B' // Mavi Gri
   },
   {
     id: 7,
-    name: 'Liste Detayları',
-    description: 'Tüm kelimeleri ve yönetim seçenekleriyle kelime listesinin detaylı görünümü.',
-    expectedFunctionality: [
-      'Listedeki tüm kelimeleri anlamlarıyla gösterme',
-      'Kelime düzenleme ve silme',
-      'Liste bilgilerini düzenleme',
-      'İlerleme istatistikleri',
-      'Öğrenme/Test modu başlatma seçenekleri',
-      'Kelime sıralama ve filtreleme'
-    ]
+    name: 'Kamera Tarama',
+    icon: 'camera',
+    route: 'CameraScan',
+    color: '#E91E63' // Pembe
   },
   {
     id: 8,
-    name: 'İlerleme Takibi',
-    description: 'Tüm listeler ve kelimeler için istatistikler ve görselleştirmelerle öğrenme ilerlemesini takip etme.',
-    expectedFunctionality: [
-      'Genel öğrenme istatistikleri',
-      'Liste bazında ilerleme görünümü',
-      'Kelime hakimiyet göstergeleri',
-      'İlerleme geçmişi grafikleri',
-      'Öğrenme serileri ve başarılar',
-      'Önerilen tekrar kelimeleri'
-    ]
-  },
-  {
-    id: 9,
-    name: 'Arama',
-    description: 'Listeler ve kelimeler arasında filtreleme seçenekleriyle arama işlevi.',
-    expectedFunctionality: [
-      'Tüm içerikte genel arama',
-      'Liste, tarih, ilerleme seviyesine göre filtreleme',
-      'Son aramalar geçmişi',
-      'Sesli arama özelliği',
-      'Önerilen arama terimleri',
-      'Arama sonuçlarından doğrudan eylemler'
-    ]
-  },
-  {
-    id: 10,
-    name: 'Ayarlar',
-    description: 'Öğrenme deneyimini özelleştirmek için uygulama ayarları ve tercihler.',
-    expectedFunctionality: [
-      'Tema ve görünüm ayarları',
-      'Bildirim tercihleri',
-      'Varsayılan liste seçenekleri',
-      'Öğrenme oturumu yapılandırmaları',
-      'Veri yönetimi (dışa/içe aktarma/temizleme)',
-      'Hesap ayarları entegrasyonu'
-    ]
-  },
-  {
-    id: 11,
-    name: 'Kamera ile Kelime Tarama',
-    description: 'Kamera kullanarak basılı metinlerden kelime tarama ve listeye ekleme.',
-    expectedFunctionality: [
-      'Kamera erişimi ve OCR entegrasyonu',
-      'Metin tanıma algoritması',
-      'Kelime seçme ve düzenleme arayüzü',
-      'Tanınan kelimeleri listeye ekleme mekanizması',
-      'Performans optimizasyonu'
-    ]
-  },
-  {
-    id: 12,
-    name: 'Sesli Komut ve Telaffuz',
-    description: 'Sesli komutlarla uygulamayı kontrol etme ve telaffuz pratiği yapma.',
-    expectedFunctionality: [
-      'Ses tanıma API entegrasyonu',
-      'Sesli komut sistemi',
-      'Telaffuz değerlendirme mekanizması',
-      'Sesli geri bildirim sistemi',
-      'Erişilebilirlik özellikleri'
-    ]
+    name: 'Sesli Komutlar',
+    icon: 'microphone',
+    route: 'VoiceCommands',
+    color: '#FF5722' // Turuncu Kırmızı
   }
 ];
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-
-  const navigateToFeature = (feature: typeof features[0]) => {
-    // Navigate directly to implemented features
-    switch (feature.id) {
-      case 1: // Kullanıcı Girişi
-        navigation.navigate('Profile');
-        break;
-      case 2: // Kelime Listeleri
-        navigation.navigate('Lists');
-        break;
-      case 3: // Liste Oluştur
-        navigation.navigate('CreateList');
-        break;
-      case 4: // Kelime Ekle
-        // For AddWord, we need a listId, so we'll navigate to Lists first
-        navigation.navigate('Lists');
-        break;
-      case 5: // Öğrenme Modu
-        // For Learning, we need a listId, so we'll navigate to Lists first
-        navigation.navigate('Lists');
-        break;
-      case 6: // Test Modu
-        // For Test, we need a listId, so we'll navigate to Lists first
-        navigation.navigate('Lists');
-        break;
-      case 7: // Liste Detayları
-        // For ListDetails, we need a listId, so we'll navigate to Lists first
-        navigation.navigate('Lists');
-        break;
-      case 8: // İlerleme Takibi
-        navigation.navigate('Progress');
-        break;
-      case 9: // Arama
-        navigation.navigate('Search');
-        break;
-      case 10: // Ayarlar
-        navigation.navigate('Settings');
-        break;
-      case 11: // Kamera ile Kelime Tarama
-        navigation.navigate('CameraScan');
-        break;
-      case 12: // Sesli Komut ve Telaffuz
-        navigation.navigate('VoiceCommands');
-        break;
-      default:
-        // This should never happen with our current feature set
-        console.warn(`No navigation defined for feature ID ${feature.id}`);
-        break;
+  const { currentTheme } = useTheme();
+  const { user } = useAuth();
+  
+  const isDark = currentTheme === 'dark';
+  
+  // Kullanıcı adını al
+  const userName = user?.name || 'Kullanıcı';
+  
+  // İlerleme durumu için state
+  const [wordsLearned, setWordsLearned] = useState(0);
+  const [progressPercentage, setProgressPercentage] = useState(0);
+  
+  // İlerleme durumunu yükle
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        const storedWordsLearned = await AsyncStorage.getItem('words_learned');
+        const storedProgressPercentage = await AsyncStorage.getItem('progress_percentage');
+        
+        // Yeni kullanıcılar için ilerleme durumunu sıfırla
+        if (storedWordsLearned === null) {
+          await AsyncStorage.setItem('words_learned', '0');
+          setWordsLearned(0);
+        } else {
+          setWordsLearned(parseInt(storedWordsLearned, 10));
+        }
+        
+        if (storedProgressPercentage === null) {
+          await AsyncStorage.setItem('progress_percentage', '0');
+          setProgressPercentage(0);
+        } else {
+          setProgressPercentage(parseInt(storedProgressPercentage, 10));
+        }
+      } catch (error) {
+        console.error('İlerleme durumu yüklenirken hata oluştu:', error);
+      }
+    };
+    
+    loadProgress();
+  }, []);
+  
+  // Kelime öğrenme simülasyonu için yardımcı fonksiyon (demo amaçlı)
+  const simulateLearnWord = async () => {
+    try {
+      // Mevcut değerleri artır
+      const newWordsLearned = wordsLearned + 1;
+      const newProgressPercentage = Math.min(100, progressPercentage + 5);
+      
+      // State'i güncelle
+      setWordsLearned(newWordsLearned);
+      setProgressPercentage(newProgressPercentage);
+      
+      // AsyncStorage'a kaydet
+      await AsyncStorage.setItem('words_learned', newWordsLearned.toString());
+      await AsyncStorage.setItem('progress_percentage', newProgressPercentage.toString());
+    } catch (error) {
+      console.error('İlerleme kaydedilirken hata oluştu:', error);
+    }
+  };
+  
+  // İlerlemeyi sıfırlama fonksiyonu (test amaçlı)
+  const resetProgress = async () => {
+    try {
+      // State'i sıfırla
+      setWordsLearned(0);
+      setProgressPercentage(0);
+      
+      // AsyncStorage'dan sil
+      await AsyncStorage.removeItem('words_learned');
+      await AsyncStorage.removeItem('progress_percentage');
+    } catch (error) {
+      console.error('İlerleme sıfırlanırken hata oluştu:', error);
     }
   };
 
-  if (Platform.OS === 'web') {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.instructions}>
-          WordPecker dil öğrenme uygulamasına hoş geldiniz. Aşağıdaki özelliklerden birini seçerek başlayabilirsiniz.
-        </Text>
-        
-        <View style={styles.grid}>
-          {features.map((feature) => (
-            <Card key={feature.id} style={styles.card}>
-              <Card.Content>
-                <Title style={styles.cardTitle}>{feature.name}</Title>
-                <Paragraph style={styles.cardDescription} numberOfLines={2}>
-                  {feature.description}
-                </Paragraph>
-              </Card.Content>
-              <Card.Actions>
-                <Button 
-                  mode="contained" 
-                  onPress={() => navigateToFeature(feature)}
-                  style={styles.button}
-                >
-                  İncele
-                </Button>
-              </Card.Actions>
-            </Card>
-          ))}
-        </View>
-      </View>
-    );
-  }
-
+  // Navigate to feature screen
+  const navigateToFeature = (route: keyof RootStackParamList, params?: any) => {
+    navigation.navigate(route, params);
+  };
+  
   return (
     <ScrollView 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }]}
       contentContainerStyle={styles.scrollViewContent}
-      showsVerticalScrollIndicator={true}
+      showsVerticalScrollIndicator={false}
     >
-      {/* Mobil için mevcut içerik */}
-      <Text style={styles.instructions}>
-        WordPecker dil öğrenme uygulamasına hoş geldiniz. Aşağıdaki özelliklerden birini seçerek başlayabilirsiniz.
-      </Text>
+      {/* Üst Kısım - Karşılama ve Profil */}
+      <View style={styles.header}>
+        <View style={styles.welcomeSection}>
+          <Text style={[styles.greeting, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
+            Merhaba, {userName}!
+          </Text>
+          <Text style={[styles.subGreeting, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+            Bugün yeni kelimeler öğrenmeye hazır mısın?
+          </Text>
+        </View>
+        <IconButton
+          icon="account-circle"
+          size={40}
+          color={isDark ? '#4CAF50' : '#4CAF50'}
+          onPress={() => navigation.navigate('Profile')}
+          style={styles.profileButton}
+        />
+      </View>
       
-      <View style={styles.grid}>
-        {features.map((feature) => (
-          <Card key={feature.id} style={styles.card}>
-            <Card.Content>
-              <Title style={styles.cardTitle}>{feature.name}</Title>
-              <Paragraph style={styles.cardDescription} numberOfLines={2}>
+      {/* İlerleme Özeti */}
+      <Card style={[styles.progressCard, { 
+        backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+        borderColor: isDark ? '#334155' : '#E2E8F0'
+      }]}>
+        <Card.Content style={styles.progressContent}>
+          <View style={styles.progressTextContainer}>
+            <Title style={[styles.progressTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
+              Haftalık İlerleme
+            </Title>
+            <Paragraph style={[styles.progressDescription, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+              Bu hafta {wordsLearned} kelime öğrendiniz. Hedefinize %{progressPercentage} ulaştınız!
+            </Paragraph>
+          </View>
+          <View style={[styles.progressCircle, { backgroundColor: progressPercentage > 0 ? '#4CAF50' : '#9E9E9E' }]}>
+            <Text style={styles.progressPercentage}>{progressPercentage}%</Text>
+          </View>
+        </Card.Content>
+        <Card.Actions style={styles.progressActions}>
+          <Button 
+            mode="text" 
+            onPress={() => navigation.navigate('Progress')}
+            color="#4CAF50"
+          >
+            Detayları Gör
+          </Button>
+        </Card.Actions>
+      </Card>
+      
+      {/* Ana Özellikler */}
+      <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
+        Kelime Öğrenme
+      </Text>
+      <View style={styles.mainFeaturesGrid}>
+        {mainFeatures.map((feature) => (
+          <Card 
+            key={feature.id} 
+            style={[styles.featureCard, { 
+              backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+              borderColor: isDark ? '#334155' : '#E2E8F0'
+            }]}
+            onPress={() => navigateToFeature(feature.route, feature.params)}
+          >
+            <Card.Content style={styles.featureContent}>
+              <Avatar.Icon 
+                size={50} 
+                icon={feature.icon} 
+                style={[styles.featureIcon, { backgroundColor: feature.color }]} 
+              />
+              <Title style={[styles.featureTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
+                {feature.name}
+              </Title>
+              <Paragraph style={[styles.featureDescription, { color: isDark ? '#94A3B8' : '#64748B' }]} numberOfLines={2}>
                 {feature.description}
               </Paragraph>
             </Card.Content>
-            <Card.Actions>
-              <Button 
-                mode="contained" 
-                onPress={() => navigateToFeature(feature)}
-                style={styles.button}
-              >
-                İncele
-              </Button>
-            </Card.Actions>
           </Card>
         ))}
+      </View>
+      
+      {/* İkincil Özellikler */}
+      <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
+        Araçlar
+      </Text>
+      <View style={styles.secondaryFeaturesGrid}>
+        {secondaryFeatures.map((feature) => (
+          <Card 
+            key={feature.id} 
+            style={[styles.secondaryFeatureCard, { 
+              backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+              borderColor: isDark ? '#334155' : '#E2E8F0'
+            }]}
+            onPress={() => navigateToFeature(feature.route, feature.params)}
+          >
+            <Card.Content style={styles.secondaryFeatureContent}>
+              <Avatar.Icon 
+                size={36} 
+                icon={feature.icon} 
+                style={[styles.secondaryFeatureIcon, { backgroundColor: feature.color }]} 
+              />
+              <Text style={[styles.secondaryFeatureTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
+                {feature.name}
+              </Text>
+            </Card.Content>
+          </Card>
+        ))}
+      </View>
+      
+      {/* Ayarlar Butonu */}
+      <View style={styles.settingsContainer}>
+        <Button 
+          mode="outlined" 
+          icon="cog" 
+          onPress={() => navigation.navigate('Settings')}
+          style={[styles.settingsButton, { 
+            borderColor: isDark ? '#4CAF50' : '#4CAF50' 
+          }]}
+          color="#4CAF50"
+        >
+          Ayarlar
+        </Button>
       </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: Platform.select({
-    web: {
-      height: Dimensions.get('window').height,
-      overflow: 'scroll',
-      padding: 16,
-      backgroundColor: '#0F172A',
-    },
-    default: {
-      flex: 1,
-      padding: 16,
-      backgroundColor: '#0F172A',
-    },
-  }),
+  container: {
+    flex: 1,
+  },
   scrollViewContent: {
-    ...(Platform.OS === 'web' ? {
-      minHeight: '100%',
-    } : {
-      flexGrow: 1,
-    }),
+    padding: 16,
+    paddingBottom: 32,
   },
-  instructions: {
-    fontSize: 16,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
-    lineHeight: 24,
-    color: '#94A3B8',
   },
-  grid: {
+  welcomeSection: {
+    flex: 1,
+  },
+  greeting: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  subGreeting: {
+    fontSize: 16,
+    marginTop: 4,
+  },
+  profileButton: {
+    margin: 0,
+  },
+  progressCard: {
+    marginBottom: 24,
+    borderWidth: 1,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  progressContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  progressTextContainer: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  progressTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  progressDescription: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  progressCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressPercentage: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  progressActions: {
+    justifyContent: 'flex-end',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  mainFeaturesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingBottom: 20,
-    ...(Platform.OS === 'web' ? {
-      maxWidth: 1200,
-      marginHorizontal: 'auto',
-    } : {}),
+    marginBottom: 24,
   },
-  card: {
-    width: Platform.OS === 'web' ? '31%' : '48%',
+  featureCard: {
+    width: '48%',
     marginBottom: 16,
-    backgroundColor: '#1E293B',
-    borderColor: '#334155',
     borderWidth: 1,
-    ...(Platform.OS === 'web' ? {
-      minWidth: 280,
-    } : {}),
+    borderRadius: 12,
+    elevation: 2,
   },
-  cardTitle: {
+  featureContent: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  featureIcon: {
+    marginBottom: 12,
+  },
+  featureTitle: {
     fontSize: 16,
-    color: '#FFFFFF',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  featureDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  secondaryFeaturesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  secondaryFeatureCard: {
+    width: '48%',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    elevation: 1,
+  },
+  secondaryFeatureContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+  },
+  secondaryFeatureIcon: {
+    marginRight: 12,
+  },
+  secondaryFeatureTitle: {
+    fontSize: 14,
     fontWeight: 'bold',
   },
-  cardDescription: {
-    color: '#94A3B8', // slate.400
-    fontSize: 14,
+  settingsContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16,
   },
-  button: {
-    backgroundColor: '#4CAF50', // Green
-  }
+  settingsButton: {
+    borderWidth: 1,
+    paddingHorizontal: 16,
+  },
 });
 
 export default HomeScreen;

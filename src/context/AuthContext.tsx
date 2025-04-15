@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiService from '../api/apiService';
 import { User, AuthState } from '../types';
 
@@ -70,6 +71,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       const { user } = await apiService.login(email, password);
       
+      // Yeni kullanıcı girişinde ilerleme durumunu sıfırla
+      await AsyncStorage.removeItem('words_learned');
+      await AsyncStorage.removeItem('progress_percentage');
+      
       setState({
         user,
         isAuthenticated: true,
@@ -92,6 +97,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setState({ ...state, isLoading: true, error: null });
       
       const { user } = await apiService.register(name, email, password);
+      
+      // Yeni kullanıcı kaydında ilerleme durumunu sıfırla
+      await AsyncStorage.removeItem('words_learned');
+      await AsyncStorage.removeItem('progress_percentage');
       
       setState({
         user,

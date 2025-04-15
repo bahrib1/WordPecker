@@ -249,7 +249,7 @@ const LearningModeScreen = () => {
   // Confirm quit
   const confirmQuit = () => {
     setShowQuitDialog(false);
-    navigation.goBack();
+    navigation.navigate('ListDetails', { listId });
   };
 
   // Cancel quit
@@ -273,7 +273,7 @@ const LearningModeScreen = () => {
       <View style={styles.errorContainer}>
         <MaterialCommunityIcons name="alert-circle" size={64} color="#EF4444" />
         <Text style={styles.errorText}>{error}</Text>
-        <Button mode="contained" onPress={() => navigation.goBack()} style={styles.errorButton}>
+        <Button mode="contained" onPress={() => navigation.navigate('ListDetails', { listId })} style={styles.errorButton}>
           Geri Dön
         </Button>
       </View>
@@ -519,7 +519,7 @@ const LearningModeScreen = () => {
         </Button>
         <Button
           mode="outlined"
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate('ListDetails', { listId })}
           style={styles.finishButton}
           icon="check"
         >

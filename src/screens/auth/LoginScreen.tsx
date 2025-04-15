@@ -49,6 +49,7 @@ const LoginScreen = () => {
 
     if (isEmailValid && isPasswordValid) {
       try {
+        // For demo purposes, allow login with any credentials
         await login(email, password);
         // Navigation will be handled by the App.tsx based on isAuthenticated state
       } catch (error) {
