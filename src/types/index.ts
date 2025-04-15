@@ -124,6 +124,6 @@ export type RootStackParamList = {
   Progress: undefined;
   Search: undefined;
   Settings: undefined;
-  CameraScan: undefined;
-  VoiceCommands: undefined;
+  Flashcards: undefined;
+  PronunciationPractice: undefined;
 };

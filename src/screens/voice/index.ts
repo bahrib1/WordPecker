@@ -1,3 +1,3 @@
-import VoiceCommandsScreen from './VoiceCommandsScreen';
+import PronunciationScreen from './VoiceCommandsScreen';
 
-export { VoiceCommandsScreen };
+export { PronunciationScreen };

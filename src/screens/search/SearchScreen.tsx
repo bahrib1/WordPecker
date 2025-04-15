@@ -425,16 +425,12 @@ const SearchScreen = () => {
               
               <TouchableOpacity
                 style={styles.quickActionItem}
-                onPress={() => navigation.navigate('FeaturePlaceholder', {
-                  featureId: 11,
-                  featureName: 'Kamera ile Tarama',
-                  description: 'Kamera ile kelime tarama özelliği'
-                })}
+                onPress={() => navigation.navigate('Flashcards')}
               >
                 <View style={[styles.quickActionIcon, { backgroundColor: '#9C27B0' }]}>
-                  <MaterialCommunityIcons name="camera" size={24} color="#FFFFFF" />
+                  <MaterialCommunityIcons name="card-text-outline" size={24} color="#FFFFFF" />
                 </View>
-                <Text style={styles.quickActionText}>Kamera ile Tara</Text>
+                <Text style={styles.quickActionText}>Kelime Kartları</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -5,19 +5,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Word } from '../../types';
-import { VoiceCommandSystem, PronunciationEvaluator, speakText, stopSpeaking } from '../../utils/speechService';
+import { PronunciationEvaluator, speakText, stopSpeaking } from '../../utils/speechService';
 import apiService from '../../api/apiService';
 
-type VoiceCommandsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'VoiceCommands'>;
+type PronunciationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'VoiceCommands'>;
 
-const VoiceCommandsScreen = () => {
-  const navigation = useNavigation<VoiceCommandsScreenNavigationProp>();
+const PronunciationScreen = () => {
+  const navigation = useNavigation<PronunciationScreenNavigationProp>();
   
   // State
-  const [isListening, setIsListening] = useState(false);
-  const [recognizedText, setRecognizedText] = useState<string | null>(null);
-  const [availableCommands, setAvailableCommands] = useState<string[]>([]);
-  const [showPronunciationMode, setShowPronunciationMode] = useState(false);
   const [currentWord, setCurrentWord] = useState<Word | null>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
@@ -29,82 +25,18 @@ const VoiceCommandsScreen = () => {
   const [isEvaluating, setIsEvaluating] = useState(false);
   
   // Refs
-  const voiceCommandSystem = useRef<VoiceCommandSystem>(new VoiceCommandSystem());
   const pronunciationEvaluator = useRef<PronunciationEvaluator>(new PronunciationEvaluator());
   
-  // Initialize voice command system
+  // Initialize
   useEffect(() => {
-    // Register commands
-    registerCommands();
-    
     // Load user lists
     loadUserLists();
-    
-    // Set available commands
-    setAvailableCommands([
-      'Ana sayfaya dön',
-      'Listeleri göster',
-      'Liste oluştur',
-      'Kelime ekle',
-      'Öğrenme modunu başlat',
-      'Test modunu başlat',
-      'İlerleme durumumu göster',
-      'Ayarları aç',
-      'Telaffuz modunu aç',
-      'Yardım'
-    ]);
     
     // Cleanup
     return () => {
       stopSpeaking();
     };
   }, []);
-  
-  // Register voice commands
-  const registerCommands = () => {
-    const vcs = voiceCommandSystem.current;
-    
-    vcs.registerCommand('ana sayfaya dön', () => navigation.navigate('Home'));
-    vcs.registerCommand('listeleri göster', () => navigation.navigate('Lists'));
-    vcs.registerCommand('liste oluştur', () => navigation.navigate('CreateList'));
-    vcs.registerCommand('kelime ekle', () => {
-      if (selectedListId) {
-        navigation.navigate('AddWord', { listId: selectedListId });
-      } else {
-        setShowListDialog(true);
-        vcs.speakFeedback('Lütfen bir liste seçin');
-      }
-    });
-    vcs.registerCommand('öğrenme modunu başlat', () => {
-      if (selectedListId) {
-        navigation.navigate('Learning', { listId: selectedListId });
-      } else {
-        setShowListDialog(true);
-        vcs.speakFeedback('Lütfen bir liste seçin');
-      }
-    });
-    vcs.registerCommand('test modunu başlat', () => {
-      if (selectedListId) {
-        navigation.navigate('Test', { listId: selectedListId });
-      } else {
-        setShowListDialog(true);
-        vcs.speakFeedback('Lütfen bir liste seçin');
-      }
-    });
-    vcs.registerCommand('ilerleme durumumu göster', () => navigation.navigate('Progress'));
-    vcs.registerCommand('ayarları aç', () => navigation.navigate('Settings'));
-    vcs.registerCommand('telaffuz modunu aç', () => {
-      setShowPronunciationMode(true);
-      loadWordsForPronunciation();
-    });
-    vcs.registerCommand('yardım', () => {
-      Alert.alert(
-        'Sesli Komutlar Yardımı',
-        'Aşağıdaki komutları kullanabilirsiniz:\n\n' +
-        availableCommands.join('\n')
-      );
-    });
-  };
   
   // Load user lists
   const loadUserLists = async () => {
@@ -115,6 +47,8 @@ const VoiceCommandsScreen = () => {
       // Set default list if available
       if (lists.length > 0) {
         setSelectedListId(lists[0].id);
+        // Automatically load words for the first list
+        loadWordsForPronunciation(lists[0].id);
       }
     } catch (error) {
       console.error('Error loading lists:', error);
@@ -122,14 +56,14 @@ const VoiceCommandsScreen = () => {
   };
   
   // Load words for pronunciation practice
-  const loadWordsForPronunciation = async () => {
-    if (!selectedListId) {
+  const loadWordsForPronunciation = async (listId = selectedListId) => {
+    if (!listId) {
       setShowListDialog(true);
       return;
     }
     
     try {
-      const words = await apiService.getWordsByListId(selectedListId);
+      const words = await apiService.getWordsByListId(listId);
       setWords(words);
       
       // Set first word as current if available
@@ -142,42 +76,11 @@ const VoiceCommandsScreen = () => {
     }
   };
   
-  // Start listening for voice commands
-  const startListening = async () => {
-    try {
-      setIsListening(true);
-      setRecognizedText(null);
-      
-      await voiceCommandSystem.current.startListening();
-      
-    } catch (error) {
-      console.error('Error starting voice recognition:', error);
-      setIsListening(false);
-      Alert.alert('Hata', 'Ses tanıma başlatılırken bir hata oluştu.');
-    }
-  };
-  
-  // Stop listening for voice commands
-  const stopListening = async () => {
-    try {
-      const text = await voiceCommandSystem.current.stopListening();
-      setRecognizedText(text);
-      setIsListening(false);
-    } catch (error) {
-      console.error('Error stopping voice recognition:', error);
-      setIsListening(false);
-    }
-  };
-  
   // Select list
   const selectList = (listId: string) => {
     setSelectedListId(listId);
     setShowListDialog(false);
-    
-    // If in pronunciation mode, load words for the selected list
-    if (showPronunciationMode) {
-      loadWordsForPronunciation();
-    }
+    loadWordsForPronunciation(listId);
   };
   
   // Speak current word
@@ -264,67 +167,6 @@ const VoiceCommandsScreen = () => {
     setPronunciationScore(null);
     setPronunciationFeedback(null);
   };
-  
-  // Render voice command mode
-  const renderVoiceCommandMode = () => (
-    <View style={styles.modeContainer}>
-      <Card style={styles.commandCard}>
-        <Card.Content>
-          <Text style={styles.cardTitle}>Sesli Komut Modu</Text>
-          <Text style={styles.cardDescription}>
-            Aşağıdaki butona basarak sesli komut verebilirsiniz. Komut tanındığında otomatik olarak çalıştırılacaktır.
-          </Text>
-          
-          <View style={styles.microphoneContainer}>
-            <TouchableOpacity
-              style={[styles.microphoneButton, isListening && styles.listeningButton]}
-              onPress={isListening ? stopListening : startListening}
-              disabled={isListening && !voiceCommandSystem.current.isCurrentlyListening()}
-            >
-              <MaterialCommunityIcons
-                name={isListening ? 'microphone' : 'microphone-outline'}
-                size={64}
-                color={isListening ? '#FFFFFF' : '#4CAF50'}
-              />
-            </TouchableOpacity>
-            <Text style={styles.microphoneText}>
-              {isListening ? 'Dinleniyor...' : 'Komut Vermek İçin Tıklayın'}
-            </Text>
-          </View>
-          
-          {recognizedText && (
-            <View style={styles.recognizedTextContainer}>
-              <Text style={styles.recognizedTextLabel}>Tanınan Komut:</Text>
-              <Text style={styles.recognizedText}>{recognizedText}</Text>
-            </View>
-          )}
-        </Card.Content>
-      </Card>
-      
-      <Card style={styles.commandsListCard}>
-        <Card.Content>
-          <Text style={styles.cardTitle}>Kullanılabilir Komutlar</Text>
-          <ScrollView style={styles.commandsList}>
-            {availableCommands.map((command, index) => (
-              <View key={index} style={styles.commandItem}>
-                <MaterialCommunityIcons name="microphone" size={20} color="#4CAF50" />
-                <Text style={styles.commandText}>{command}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        </Card.Content>
-      </Card>
-      
-      <Button
-        mode="contained"
-        onPress={() => setShowPronunciationMode(true)}
-        style={styles.switchModeButton}
-        icon="volume-high"
-      >
-        Telaffuz Moduna Geç
-      </Button>
-    </View>
-  );
   
   // Render pronunciation mode
   const renderPronunciationMode = () => (
@@ -439,19 +281,6 @@ const VoiceCommandsScreen = () => {
           </Card.Content>
         </Card>
       )}
-      
-      <Button
-        mode="contained"
-        onPress={() => {
-          setShowPronunciationMode(false);
-          setPronunciationScore(null);
-          setPronunciationFeedback(null);
-        }}
-        style={styles.switchModeButton}
-        icon="microphone"
-      >
-        Sesli Komut Moduna Geç
-      </Button>
     </View>
   );
   
@@ -465,7 +294,9 @@ const VoiceCommandsScreen = () => {
             {userLists.length === 0 ? (
               <View style={styles.emptyListsContainer}>
                 <MaterialCommunityIcons name="playlist-remove" size={48} color="#64748B" />
-                <Text style={styles.emptyListsText}>Henüz liste oluşturmadınız.</Text>
+                <Text style={styles.emptyListsText}>
+                  Henüz liste oluşturmadınız.
+                </Text>
               </View>
             ) : (
               userLists.map(list => (
@@ -478,15 +309,12 @@ const VoiceCommandsScreen = () => {
                   onPress={() => selectList(list.id)}
                 >
                   <MaterialCommunityIcons
-                    name="playlist-edit"
+                    name="playlist-check"
                     size={24}
-                    color={selectedListId === list.id ? '#4CAF50' : '#94A3B8'}
+                    color={selectedListId === list.id ? '#4CAF50' : '#64748B'}
                     style={styles.listItemIcon}
                   />
                   <Text style={styles.listItemText}>{list.name}</Text>
-                  {selectedListId === list.id && (
-                    <MaterialCommunityIcons name="check" size={20} color="#4CAF50" />
-                  )}
                 </TouchableOpacity>
               ))
             )}
@@ -518,9 +346,7 @@ const VoiceCommandsScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {showPronunciationMode ? 'Telaffuz Pratiği' : 'Sesli Komutlar'}
-        </Text>
+        <Text style={styles.headerTitle}>Telaffuz Pratiği</Text>
         <TouchableOpacity
           style={styles.listSelectorButton}
           onPress={() => setShowListDialog(true)}
@@ -534,8 +360,7 @@ const VoiceCommandsScreen = () => {
         </TouchableOpacity>
       </View>
       
-      {showPronunciationMode ? renderPronunciationMode() : renderVoiceCommandMode()}
-      
+      {renderPronunciationMode()}
       {renderListDialog()}
     </View>
   );
@@ -577,92 +402,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  commandCard: {
-    marginBottom: 16,
-    backgroundColor: '#1E293B', // slate.800
-    borderColor: '#334155', // slate.700
-    borderWidth: 1,
-  },
-  commandsListCard: {
-    flex: 1,
-    backgroundColor: '#1E293B', // slate.800
-    borderColor: '#334155', // slate.700
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 12,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: '#94A3B8', // slate.400
-    marginBottom: 16,
-  },
-  microphoneContainer: {
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  microphoneButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(76, 175, 80, 0.1)', // Green with opacity
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#4CAF50', // Green
-  },
-  listeningButton: {
-    backgroundColor: '#4CAF50', // Green
-  },
-  microphoneText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  recognizedTextContainer: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#334155', // slate.700
-    borderRadius: 8,
-  },
-  recognizedTextLabel: {
-    fontSize: 14,
-    color: '#94A3B8', // slate.400
-    marginBottom: 4,
-  },
-  recognizedText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  commandsList: {
-    maxHeight: 200,
-  },
-  commandItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155', // slate.700
-  },
-  commandText: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  switchModeButton: {
-    backgroundColor: '#4CAF50', // Green
-  },
   pronunciationCard: {
     flex: 1,
     marginBottom: 16,
     backgroundColor: '#1E293B', // slate.800
     borderColor: '#334155', // slate.700
     borderWidth: 1,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 12,
   },
   wordContainer: {
     flexDirection: 'row',
@@ -825,4 +576,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default VoiceCommandsScreen;
+export default PronunciationScreen;

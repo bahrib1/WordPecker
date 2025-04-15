@@ -75,15 +75,15 @@ const secondaryFeatures = [
   },
   {
     id: 7,
-    name: 'Kamera Tarama',
-    icon: 'camera',
-    route: 'CameraScan',
+    name: 'Kelime Kartları',
+    icon: 'card-text-outline',
+    route: 'Flashcards',
     color: '#E91E63' // Pembe
   },
   {
     id: 8,
-    name: 'Sesli Komutlar',
-    icon: 'microphone',
+    name: 'Telaffuz Pratiği',
+    icon: 'volume-high',
     route: 'VoiceCommands',
     color: '#FF5722' // Turuncu Kırmızı
   }

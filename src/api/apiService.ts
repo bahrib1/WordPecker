@@ -314,6 +314,62 @@ const getWordsByListId = async (listId: string): Promise<Word[]> => {
         value: 'computer',
         meaning: 'bilgisayar',
         createdAt: new Date().toISOString()
+      },
+      {
+        id: '4',
+        listId,
+        value: 'house',
+        meaning: 'ev',
+        context: 'I live in a big house.',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '5',
+        listId,
+        value: 'car',
+        meaning: 'araba',
+        context: 'I drive my car to work every day.',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '6',
+        listId,
+        value: 'phone',
+        meaning: 'telefon',
+        context: 'I forgot my phone at home.',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '7',
+        listId,
+        value: 'water',
+        meaning: 'su',
+        context: 'I drink eight glasses of water daily.',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '8',
+        listId,
+        value: 'friend',
+        meaning: 'arkadaş',
+        context: 'She is my best friend since childhood.',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '9',
+        listId,
+        value: 'time',
+        meaning: 'zaman',
+        context: 'Time flies when you are having fun.',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '10',
+        listId,
+        value: 'food',
+        meaning: 'yemek',
+        context: 'Turkish food is delicious.',
+        createdAt: new Date().toISOString()
       }
     ];
     

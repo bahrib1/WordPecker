@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { Text, Card, Button, ProgressBar, ActivityIndicator, IconButton, Dialog, Portal } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -33,7 +33,12 @@ const LearningModeScreen = () => {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [streak, setStreak] = useState(0);
   const [score, setScore] = useState(0);
-  const [results, setResults] = useState<{ correct: number; total: number; }>();
+  
+  // Use a ref to store the final results to prevent state update issues
+  const finalResultsRef = useRef<{ correct: number; total: number; } | null>(null);
+  
+  // Separate state for displaying results in the UI
+  const [displayResults, setDisplayResults] = useState<{ correct: number; total: number; } | null>(null);
   
   // Animation values
   const [fadeAnim] = useState(new Animated.Value(1));
@@ -115,12 +120,22 @@ const LearningModeScreen = () => {
     });
   };
 
+  // Initialize session results when exercises change
+  useEffect(() => {
+    if (exercises.length > 0) {
+      setSessionResults(new Array(exercises.length).fill(null));
+    }
+  }, [exercises]);
+
   // Start learning session
   const startSession = () => {
     setSessionState('exercise');
     setCurrentExerciseIndex(0);
     setScore(0);
     setStreak(0);
+    // Reset results
+    finalResultsRef.current = null;
+    setDisplayResults(null);
   };
 
   // Handle answer selection
@@ -164,32 +179,6 @@ const LearningModeScreen = () => {
     }, 2000);
   };
 
-  // Handle next exercise
-  const handleNextExercise = () => {
-    if (currentExerciseIndex < exercises.length - 1) {
-      setCurrentExerciseIndex(currentExerciseIndex + 1);
-      setSelectedAnswer(null);
-      setIsCorrect(null);
-      setSessionState('exercise');
-    } else {
-      // End of session
-      const correctCount = exercises.filter((_, index) => {
-        const result = sessionResults[index];
-        return result && result.isCorrect;
-      }).length;
-      
-      setResults({
-        correct: correctCount,
-        total: exercises.length
-      });
-      
-      setSessionState('summary');
-      
-      // Save progress
-      saveProgress(correctCount, exercises.length);
-    }
-  };
-
   // Session results tracking
   const [sessionResults, setSessionResults] = useState<Array<{ answer: string; isCorrect: boolean } | null>>(
     new Array(exercises.length).fill(null)
@@ -198,6 +187,13 @@ const LearningModeScreen = () => {
   // Update session results when feedback is shown
   useEffect(() => {
     if (sessionState === 'feedback' && selectedAnswer !== null && isCorrect !== null) {
+      console.log('useEffect [sessionState, selectedAnswer, isCorrect] - Updating sessionResults', {
+        currentExerciseIndex,
+        isCorrect,
+        selectedAnswer,
+        sessionResultsLength: sessionResults.length
+      });
+      
       const newResults = [...sessionResults];
       newResults[currentExerciseIndex] = {
         answer: selectedAnswer,
@@ -207,17 +203,75 @@ const LearningModeScreen = () => {
     }
   }, [sessionState, selectedAnswer, isCorrect]);
 
+  // Handle next exercise
+  const handleNextExercise = () => {
+    if (currentExerciseIndex < exercises.length - 1) {
+      setCurrentExerciseIndex(currentExerciseIndex + 1);
+      setSelectedAnswer(null);
+      setIsCorrect(null);
+      setSessionState('exercise');
+    } else {
+      // End of session - Calculate final results only once
+      console.log('handleNextExercise - End of session - Before calculation', {
+        currentExerciseIndex,
+        selectedAnswer,
+        isCorrect,
+        sessionResultsLength: sessionResults.length,
+        sessionResults: sessionResults.map(r => r ? r.isCorrect : null)
+      });
+      
+      // Create a complete copy of session results with the current answer
+      const finalSessionResults = [...sessionResults];
+      if (selectedAnswer !== null && isCorrect !== null) {
+        finalSessionResults[currentExerciseIndex] = {
+          answer: selectedAnswer,
+          isCorrect: isCorrect
+        };
+      }
+      
+      // Calculate correct answers
+      const correctCount = finalSessionResults.filter(result => result && result.isCorrect).length;
+      const finalScore = Math.round(score);
+      
+      console.log('handleNextExercise - End of session - After calculation', {
+        finalSessionResultsLength: finalSessionResults.length,
+        finalSessionResults: finalSessionResults.map(r => r ? r.isCorrect : null),
+        correctCount,
+        finalScore
+      });
+      
+      // Store final results in ref to prevent state update issues
+      finalResultsRef.current = {
+        correct: correctCount,
+        total: exercises.length
+      };
+      
+      // Update display results for UI
+      setDisplayResults({
+        correct: correctCount,
+        total: exercises.length
+      });
+      
+      // Change session state
+      setSessionState('summary');
+      
+      // Save progress with the final values
+      saveProgress(correctCount, exercises.length, finalScore);
+    }
+  };
+
   // Save progress to API
-  const saveProgress = async (correct: number, total: number) => {
+  const saveProgress = async (correct: number, total: number, finalScore: number) => {
     try {
       // In a real app, this would call an API to save progress
       // await apiService.saveProgress(listId, {
       //   correct,
       //   total,
-      //   score
+      //   score: finalScore
       // });
       
-      console.log('Progress saved:', { correct, total, score });
+      // Use the correct values passed from handleNextExercise
+      console.log('saveProgress - Saving progress with values:', { correct, total, score: finalScore });
     } catch (error) {
       console.error('Error saving progress:', error);
     }
@@ -236,6 +290,10 @@ const LearningModeScreen = () => {
     setIsCorrect(null);
     setScore(0);
     setStreak(0);
+    
+    // Reset results
+    finalResultsRef.current = null;
+    setDisplayResults(null);
     
     // Start new session
     setSessionState('intro');
@@ -481,18 +539,18 @@ const LearningModeScreen = () => {
           <View style={styles.resultsContainer}>
             <View style={styles.resultItem}>
               <MaterialCommunityIcons name="check" size={24} color="#4CAF50" />
-              <Text style={styles.resultValue}>{results?.correct || 0}</Text>
+              <Text style={styles.resultValue}>{displayResults?.correct || 0}</Text>
               <Text style={styles.resultLabel}>Doğru</Text>
             </View>
             <View style={styles.resultItem}>
               <MaterialCommunityIcons name="close" size={24} color="#EF4444" />
-              <Text style={styles.resultValue}>{(results?.total || 0) - (results?.correct || 0)}</Text>
+              <Text style={styles.resultValue}>{(displayResults?.total || 0) - (displayResults?.correct || 0)}</Text>
               <Text style={styles.resultLabel}>Yanlış</Text>
             </View>
             <View style={styles.resultItem}>
               <MaterialCommunityIcons name="percent" size={24} color="#2196F3" />
               <Text style={styles.resultValue}>
-                {results ? Math.round((results.correct / results.total) * 100) : 0}%
+                {displayResults ? Math.round((displayResults.correct / displayResults.total) * 100) : 0}%
               </Text>
               <Text style={styles.resultLabel}>Başarı</Text>
             </View>
@@ -500,7 +558,7 @@ const LearningModeScreen = () => {
 
           <View style={styles.progressBarContainer}>
             <ProgressBar
-              progress={results ? results.correct / results.total : 0}
+              progress={displayResults ? displayResults.correct / displayResults.total : 0}
               color="#4CAF50"
               style={styles.summaryProgressBar}
             />
@@ -595,23 +653,25 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: '#1E293B', // slate.800
     marginBottom: 24,
-    borderColor: '#334155', // slate.700
-    borderWidth: 1,
   },
   infoTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 12,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   infoText: {
-    color: '#94A3B8', // slate.400
-    marginBottom: 16,
+    fontSize: 16,
+    color: '#CBD5E1', // slate.300
+    marginBottom: 24,
+    lineHeight: 24,
+    textAlign: 'center',
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 16,
+    marginBottom: 8,
   },
   statItem: {
     alignItems: 'center',
@@ -624,50 +684,51 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#94A3B8', // slate.400
   },
   startButton: {
-    backgroundColor: '#4CAF50', // Green
-    marginBottom: 24,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 8,
   },
   progressContainer: {
-    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 8,
   },
   progressBar: {
+    flex: 1,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#334155', // slate.700
   },
   progressText: {
-    color: '#94A3B8', // slate.400
-    fontSize: 12,
-    textAlign: 'right',
-    marginTop: 4,
+    marginLeft: 16,
+    color: '#CBD5E1', // slate.300
+    fontSize: 14,
   },
   streakContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingBottom: 8,
   },
   streakText: {
+    marginLeft: 8,
+    color: '#64748B', // slate.500
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#64748B', // slate.500
-    marginLeft: 4,
   },
   activeStreakText: {
-    color: '#FF9800', // Orange
+    color: '#FF9800',
   },
   exerciseContainer: {
     padding: 16,
-    flex: 1,
   },
   questionLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#94A3B8', // slate.400
     marginBottom: 8,
   },
@@ -683,15 +744,12 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     backgroundColor: '#1E293B', // slate.800
-    borderRadius: 8,
     padding: 16,
+    borderRadius: 8,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#334155', // slate.700
   },
   selectedOptionButton: {
-    borderColor: '#4CAF50', // Green
-    borderWidth: 2,
+    backgroundColor: '#4CAF50',
   },
   optionText: {
     fontSize: 16,
@@ -700,21 +758,10 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     fontWeight: 'bold',
   },
-  bottomContainer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#334155', // slate.700
-  },
-  quitButton: {
-    borderColor: '#64748B', // slate.500
-  },
-  nextButton: {
-    backgroundColor: '#4CAF50', // Green
-  },
   feedbackContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 24,
+    marginBottom: 24,
   },
   feedbackIcon: {
     marginBottom: 16,
@@ -725,20 +772,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   correctFeedbackText: {
-    color: '#4CAF50', // Green
+    color: '#4CAF50',
   },
   incorrectFeedbackText: {
-    color: '#EF4444', // Red
+    color: '#EF4444',
   },
   correctAnswerText: {
     fontSize: 16,
     color: '#FFFFFF',
   },
+  bottomContainer: {
+    padding: 16,
+    marginTop: 'auto',
+  },
+  nextButton: {
+    backgroundColor: '#4CAF50',
+  },
+  quitButton: {
+    borderColor: '#64748B', // slate.500
+  },
   summaryCard: {
     backgroundColor: '#1E293B', // slate.800
     marginBottom: 24,
-    borderColor: '#334155', // slate.700
-    borderWidth: 1,
   },
   scoreContainer: {
     alignItems: 'center',
@@ -752,7 +807,7 @@ const styles = StyleSheet.create({
   scoreValue: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#4CAF50', // Green
+    color: '#4CAF50',
   },
   resultsContainer: {
     flexDirection: 'row',
@@ -763,33 +818,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginTop: 8,
     marginBottom: 4,
   },
   resultLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#94A3B8', // slate.400
   },
   progressBarContainer: {
-    marginTop: 8,
+    marginBottom: 8,
   },
   summaryProgressBar: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#334155', // slate.700
+    height: 8,
+    borderRadius: 4,
   },
   buttonsContainer: {
-    marginBottom: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   restartButton: {
-    backgroundColor: '#4CAF50', // Green
-    marginBottom: 12,
+    flex: 1,
+    marginRight: 8,
+    backgroundColor: '#4CAF50',
   },
   finishButton: {
-    borderColor: '#64748B', // slate.500
+    flex: 1,
+    marginLeft: 8,
+    borderColor: '#4CAF50',
   },
   loadingContainer: {
     flex: 1,
@@ -798,8 +856,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A', // slate.900
   },
   loadingText: {
-    color: '#FFFFFF',
     marginTop: 16,
+    fontSize: 16,
+    color: '#CBD5E1', // slate.300
   },
   errorContainer: {
     flex: 1,
@@ -809,14 +868,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   errorText: {
-    color: '#EF4444', // Red
-    fontSize: 16,
-    textAlign: 'center',
     marginTop: 16,
     marginBottom: 24,
+    fontSize: 16,
+    color: '#CBD5E1', // slate.300
+    textAlign: 'center',
   },
   errorButton: {
-    backgroundColor: '#4CAF50', // Green
+    backgroundColor: '#EF4444',
   },
 });
 

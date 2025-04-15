@@ -15,8 +15,8 @@ import { ListDetailsScreen } from './src/screens/details';
 import { ProgressTrackingScreen } from './src/screens/progress';
 import { SearchScreen } from './src/screens/search';
 import { SettingsScreen } from './src/screens/settings';
-import { CameraScanScreen } from './src/screens/camera';
-import { VoiceCommandsScreen } from './src/screens/voice';
+import { PronunciationScreen } from './src/screens/voice';
+import { FlashcardsScreen } from './src/screens/flashcards';
 import { RootStackParamList } from './src/types';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -64,8 +64,8 @@ const AppNavigator = () => {
       <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Arama' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
-      <Stack.Screen name="CameraScan" component={CameraScanScreen} options={{ title: 'Kamera ile Tarama' }} />
-      <Stack.Screen name="VoiceCommands" component={VoiceCommandsScreen} options={{ title: 'Sesli Komutlar' }} />
+      <Stack.Screen name="Flashcards" component={FlashcardsScreen} options={{ title: 'Kelime Kartları' }} />
+      <Stack.Screen name="VoiceCommands" component={PronunciationScreen} options={{ title: 'Telaffuz Pratiği' }} />
     </Stack.Navigator>
   );
 };
